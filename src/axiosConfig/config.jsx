@@ -1,0 +1,1 @@
+export const URL_SIGERP = 'http://192.168.100.231:8080/api';
