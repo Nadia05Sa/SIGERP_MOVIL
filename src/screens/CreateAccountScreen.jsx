@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, Image, StyleSheet, Modal } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Header from '../components/Header';
-import { doGet } from '../axiosConfig/api';
+import { doGet } from '../axiosConfig/axiosInterceptor';
 
 const CreateAccountScreen = () => {
   const [categories, setCategories] = useState([]);

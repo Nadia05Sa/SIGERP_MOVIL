@@ -1,1 +1,0 @@
-# SIGERP_MOVIL

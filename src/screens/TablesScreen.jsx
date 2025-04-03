@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, Alert, StyleSheet, FlatList, Image, Modal, StatusBar, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Header from '../components/Header';
-import { doGet, doPatch } from "../axiosConfig/api"; 
+import { doGet } from '../axiosConfig/axiosInterceptor';
 
 const TablesScreen = () => {
     const [mesaState, setMesaState] = useState([]);
