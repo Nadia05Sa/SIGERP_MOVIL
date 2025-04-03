@@ -2,8 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, Alert, StyleSheet, FlatList, Image, Modal, StatusBar, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Header from '../components/Header';
-import { doGet } from '../axiosConfig/axiosInterceptor';
-
+import { doGet, doPatch } from '../axiosConfig/axiosInterceptor';
 const TablesScreen = () => {
     const [mesaState, setMesaState] = useState([]);
     const [selectedTable, setSelectedTable] = useState(null);
@@ -63,7 +62,7 @@ const TablesScreen = () => {
 
         Alert.alert(
             'Habilitar Mesa',
-            '¿Quieres habilitar esta mesa?',
+            '¿Quieres abrir una cienta en esta mesa?',
             [
                 { text: 'No', style: 'cancel' },
                 { text: 'Sí', onPress: () => enableTable(mesa) },
@@ -110,7 +109,7 @@ const TablesScreen = () => {
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle={modalVisible ? 'dark-content' : 'light-content'} backgroundColor={modalVisible ? 'rgba(0,0,0,0.5)' : '#fff'} />
+            <StatusBar barStyle={modalVisible ? 'dark-content' : 'light-content'} backgroundColor={modalVisible ? 'rgb(83, 1, 29)' : '#a4113a'} />
             <Header title="Tus mesas" />
             <FlatList
                 data={mesaState}

@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from 'react-native-elements';
-import Logo from '../../assets/Logo.png';
+import Logo from '../../assets/LogoBlanco.png';
 
 const Header = ({ title }) => {
   const navigation = useNavigation();
@@ -10,7 +10,7 @@ const Header = ({ title }) => {
   return (
     <View style={styles.header}>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <Icon name="arrow-back-ios" size={35} color="black" onPress={() => navigation.goBack()} />
+        <Icon name="arrow-back-ios" size={30} color="#fff" onPress={() => navigation.goBack()} />
           <Text style={styles.title}>{title}</Text>
       </View>
       <View style={{ flexDirection: 'row' }}>
@@ -28,7 +28,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     paddingHorizontal: 20,
     padding: 5,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#a4113a',
     borderBottomColor: '#DDD',
     borderBottomWidth: 1,
   },
@@ -37,6 +37,7 @@ const styles = StyleSheet.create({
     height: 45,
   },
   title: {
+    color: '#fff',
     fontSize: 24,
     fontWeight: 'bold',
   },

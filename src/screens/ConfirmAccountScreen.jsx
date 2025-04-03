@@ -12,7 +12,7 @@ const ConfirmAccountScreen = () => {
   const [currentDish, setCurrentDish] = useState(null);
   const [observations, setObservations] = useState('');
 
-  const total = Array.isArray(dishes) ? dishes.reduce((acc, dish) => acc + (dish.price * dish.quantity || 0), 0) : 0;
+  const total = Array.isArray(dishes) ? dishes.reduce((acc, dish) => acc + (dish.precio * dish.quantity || 0), 0) : 0;
 
   const openModal = (dish) => {
     setCurrentDish(dish);
@@ -20,6 +20,11 @@ const ConfirmAccountScreen = () => {
     setModalVisible(true);
   };
   
+  const handleGoToCart = () => {
+    navigation.pop(2);
+    //agragar endpoint para api
+  };
+
   const updateDish = () => {
     setDishes(dishes.map(dish =>
       dish.name === currentDish.name
@@ -46,30 +51,29 @@ const ConfirmAccountScreen = () => {
 
   const renderDish = ({ item }) => (
     <TouchableOpacity style={styles.dishItem} onPress={() => openModal(item)}>
-      <Image source={item.image} style={styles.dishIcon} />
-      <Text style={styles.dishName}>{item.name}</Text>
-      <Text style={styles.dishPrice}>${(item.price * item.quantity).toFixed(2)}</Text>
+      <Image source={{ uri: item.imagen }} style={styles.dishIcon} />
+      <Text style={styles.dishName}>{item.nombre}</Text>
+      <Text style={styles.dishPrice}>${(item.precio * item.quantity).toFixed(2)}</Text>
       <Text style={styles.dishQuantity}>x{item.quantity}</Text>
     </TouchableOpacity>
   );
-
+  console.log('platillo 1',dishes);
   return (
     <View style={styles.container}>
       <Header title="Confirma la cuenta" />
       {/* Cambia el color de la barra de estado según el estado del modal */}
-            <StatusBar
-              barStyle={modalVisible ? 'dark-content' : 'light-content'}
-              backgroundColor={modalVisible ? 'rgba(0,0,0,0.5)' : '#fff'}
-            />
+      <StatusBar barStyle={modalVisible ? 'dark-content' : 'light-content'} backgroundColor={modalVisible ? 'rgb(83, 1, 29)' : '#a4113a'} />
+  
       <FlatList
         data={dishes}
         renderItem={renderDish}
-        keyExtractor={(item) => item.name}
+        keyExtractor={(item) => item.id.toString()} // Asegúrate de convertir el id a string
       />
+
       <View style={styles.footer}>
         <Text style={styles.totalText}>Total: ${total.toFixed(2)}</Text>
         <TouchableOpacity style={styles.confirmButton}>
-          <Text style={styles.confirmText}>Confirmar</Text>
+          <Text style={styles.confirmText}  onPress={handleGoToCart} >Confirmar</Text>
         </TouchableOpacity>
       </View>
 
@@ -78,11 +82,11 @@ const ConfirmAccountScreen = () => {
           <View style={styles.modalView}>
             {currentDish && (
               <>
-                <View style={{flexDirection:'row', justifyContent: 'space-between', width:'80%'}}>
-                  <Image source={currentDish.image} style={styles.modalImage} />
+                <View style={{flexDirection:'row', justifyContent: 'space-between', width:'90%'}}>
+                <Image source={{ uri: currentDish.imagen }} style={styles.modalImage} />
                   
                   <View style={{alignItems: 'center', justifyContent:"center"}}>
-                    <Text style={styles.modalTitle}>{currentDish.name}</Text>
+                    <Text style={styles.modalTitle}>{currentDish.nombre}</Text>
                     <View style={styles.counterContainer}>
                       <TouchableOpacity style={styles.counterButton} onPress={decrementQuantity}><Text>-</Text></TouchableOpacity>
                         <Text style={styles.counterText}>{currentDish.quantity}</Text>

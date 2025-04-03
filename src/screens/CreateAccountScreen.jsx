@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, Image, StyleSheet, Modal } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, Image, StyleSheet, StatusBar, Modal } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Header from '../components/Header';
 import { doGet } from '../axiosConfig/axiosInterceptor';
@@ -54,10 +54,10 @@ const CreateAccountScreen = () => {
   // Confirma la adición del platillo seleccionado a la lista
   const handleConfirmAddDish = () => {
     setSelectedDishes((prev) => {
-      const existingDish = prev.find(dish => dish.name === dishToAdd.name);
+      const existingDish = prev.find(dish => dish.id === dishToAdd.id);
       if (existingDish) {
         return prev.map(dish =>
-          dish.name === dishToAdd.name
+          dish.id === dishToAdd.id
             ? { ...dish, quantity: dish.quantity + quantity, notes: notes || dish.notes }
             : dish
         );
@@ -85,7 +85,9 @@ const CreateAccountScreen = () => {
   return (
     <View style={styles.container}>
       <Header title="Genera una cuenta" />
-
+      
+      <StatusBar barStyle={modalVisible ? 'dark-content' : 'light-content'} backgroundColor={modalVisible ? 'rgb(83, 1, 29)' : '#a4113a'} />
+      
       {/* Barra de búsqueda */}
       <View style={styles.searchContainer}>
         <TextInput
@@ -127,13 +129,21 @@ const CreateAccountScreen = () => {
           renderItem={({ item }) => (
             <TouchableOpacity style={styles.dishItem} onPress={() => handleSelectDish(item)}>
               <Image source={{ uri: item.imagen }} style={styles.dishIcon} />
-              <Text style={styles.dishName}>{item.nombre}</Text>
+              <View style={styles.dishDetails}>
+                <View style={{flexDirection:'row', justifyContent:'space-between'}}>
+                  <Text style={styles.dishName}>{item.nombre}</Text>
+                  <Text style={styles.dishName}>${item.precio}</Text>
+                </View>
+                <Text style={styles.dishDescription}>{item.descripcion}</Text>
+              </View>
             </TouchableOpacity>
           )}
+          contentContainerStyle={styles.flatListContent}
+          style={styles.flatList}
         />
       )}
 
-<TouchableOpacity style={styles.cartButton} onPress={handleGoToCart}>
+      <TouchableOpacity style={styles.cartButton} onPress={handleGoToCart}>
         <Image source={require('../../assets/favicon.png')} style={styles.cartIcon} />
       </TouchableOpacity>
 
@@ -149,10 +159,10 @@ const CreateAccountScreen = () => {
             {dishToAdd && (
               <>
                 {/* Imagen, nombre y control de cantidad */}
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '80%' }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '90%' }}>
                 <Image source={{ uri: dishToAdd.imagen }} style={styles.modalImage} />
                   <View style={{ alignItems: 'center', justifyContent: "center" }}>
-                    <Text style={styles.modalTitle}>{dishToAdd.name}</Text>
+                    <Text style={styles.modalTitle}>{dishToAdd.nombre}</Text>
                     <View style={styles.quantityContainer}>
                       <TouchableOpacity onPress={() => setQuantity(Math.max(1, quantity - 1))}>
                         <Text style={styles.quantityButton}>-</Text>
@@ -176,9 +186,14 @@ const CreateAccountScreen = () => {
                 />
 
                 {/* Botón para confirmar y agregar platillo */}
-                <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmAddDish}>
-                  <Text style={styles.confirmButtonText}>Agregar</Text>
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-evenly', width: '100%' }}>
+                  <TouchableOpacity style={styles.cancelButton} onPress={() => setModalVisible(false)}>
+                    <Text style={styles.cancelButtonText}>Cancelar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmAddDish}>
+                    <Text style={styles.confirmButtonText}>Agregar</Text>
+                  </TouchableOpacity>
+                </View>
               </>
             )}
           </View>
@@ -339,6 +354,17 @@ const styles = StyleSheet.create({
   },
   confirmButtonText: {
     color: 'white',
+    fontWeight: 'bold',
+  },
+  cancelButton: {
+    backgroundColor: '#DDD',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    marginRight: 10,
+  },
+  cancelButtonText: {
+    color: '#000',
     fontWeight: 'bold',
   },
 });

@@ -12,7 +12,7 @@ const Stack = createStackNavigator();
 const AppNavigator = () => {
   return (
     <NavigationContainer>
-      <StatusBar barStyle="light-content" backgroundColor="#9B1C31" />
+      <StatusBar barStyle="light-content" backgroundColor="#a4113a" />
       <Stack.Navigator screenOptions={{ headerTitle: "", headerShown: false }}>
         <Stack.Screen
           name="LoginScreen"
