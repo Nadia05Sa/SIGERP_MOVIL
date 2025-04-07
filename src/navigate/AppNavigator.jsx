@@ -6,6 +6,8 @@ import LoginScreen from '../screens/LoginScreen';
 import TablesScreen from '../screens/TablesScreen';
 import CreateAccountScreen from '../screens/CreateAccountScreen';
 import ConfirmAccountScreen from '../screens/ConfirmAccountScreen';
+import AccountScreen from '../screens/AccountScreen';
+import QrScreen from '../screens/QrScreen';
 
 const Stack = createStackNavigator();
 
@@ -44,6 +46,24 @@ const AppNavigator = () => {
         <Stack.Screen
           name="ConfirmAccountScreen"
           component={ConfirmAccountScreen}
+          options={{
+            headerShown: false,
+            statusBarStyle: 'dark-content',
+            statusBarBackgroundColor: '#FFF',
+          }}
+        />
+        <Stack.Screen
+          name="AccountScreen"
+          component={AccountScreen}
+          options={{
+            headerShown: false,
+            statusBarStyle: 'dark-content',
+            statusBarBackgroundColor: '#FFF',
+          }}
+        />
+        <Stack.Screen
+          name="QrScreen"
+          component={QrScreen}
           options={{
             headerShown: false,
             statusBarStyle: 'dark-content',

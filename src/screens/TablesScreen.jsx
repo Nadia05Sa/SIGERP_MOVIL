@@ -62,7 +62,7 @@ const TablesScreen = () => {
 
         Alert.alert(
             'Habilitar Mesa',
-            '¿Quieres abrir una cienta en esta mesa?',
+            '¿Quieres abrir una cuenta en esta mesa?',
             [
                 { text: 'No', style: 'cancel' },
                 { text: 'Sí', onPress: () => enableTable(mesa) },
@@ -77,7 +77,7 @@ const TablesScreen = () => {
 
     const handleViewAccount = () => {
         setModalVisible(false);
-        Alert.alert('Ver cuenta', `Mostrando cuenta para la mesa: ${selectedTable.nombre}`);
+        navigation.navigate('AccountScreen');    
     };
 
     const renderItem = useCallback(({ item }) => (
