@@ -27,10 +27,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     padding: 5,
+    marginBottom:20,
     backgroundColor: '#a4113a',
     borderBottomColor: '#DDD',
-    borderBottomWidth: 1,
-  },
+    borderBottomWidth: 1,
+  },
   logo: {
     width: 45,
     height: 45,

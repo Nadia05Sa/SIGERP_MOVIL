@@ -2,47 +2,57 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Alert } from 'react-native';
 import LogoCompleto from '../../assets/LogoCompleto.png';
 import { useNavigation } from '@react-navigation/native';
+import { authenticate } from '../axiosConfig/axiosInterceptor';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigation = useNavigation();
-
-  const handleSignIn = () => {
+  
+  const handleLogin = async () => {
     // Validación: Campos vacíos
     if (!email.trim() || !password.trim()) {
       Alert.alert('Error', 'Por favor, ingrese su correo y contraseña.');
       return;
     }
-
+    
     // Validación: Formato de correo electrónico
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       Alert.alert('Error', 'Por favor, ingrese un correo válido.');
       return;
     }
-
+    
     // Validación: Longitud mínima de la contraseña
     if (password.length < 4) {
       Alert.alert('Error', 'La contraseña debe tener al menos 4 caracteres.');
       return;
     }
+    
+    const userData = await authenticate(email, password);
+console.log('User  data:', userData.estado);
 
-    // Validación: Credenciales específicas
-    if (email !== 'max@gmail.com' || password !== '1234') {
-      Alert.alert('Error', 'Correo o contraseña incorrectos.');
-      return;
-    }
+if (userData.estado === true) {
+    // Almacenar datos del empleado en AsyncStorage
+    await AsyncStorage.setItem('employeeData', JSON.stringify(userData));
 
-    // Navegación a la pantalla de mesas
+    // Aquí puedes establecer el usuario en el contexto si lo estás usando
+    console.log('Login exitoso:', userData.estado);
+
+    Alert.alert('Login exitoso', 'Bienvenido al sistema.');
     navigation.navigate('TablesScreen');
+} else {const response = await doGet(`/empleado/${currentEmployeeData.id}/mesas`);
+console.log('Respuesta de mesas:', response);
+    Alert.alert('Error', 'Credenciales incorrectas.');
+}
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.card}>
         <Image source={LogoCompleto} style={styles.logo} />
-
+        
         <Text style={styles.label}>Correo:</Text>
         <TextInput
           style={styles.input}
@@ -53,7 +63,7 @@ const LoginScreen = () => {
           keyboardType="email-address"
           autoCapitalize="none"
         />
-
+        
         <Text style={styles.label}>Contraseña:</Text>
         <TextInput
           style={styles.input}
@@ -63,8 +73,8 @@ const LoginScreen = () => {
           value={password}
           onChangeText={setPassword}
         />
-
-        <TouchableOpacity style={styles.button} onPress={handleSignIn}>
+        
+        <TouchableOpacity style={styles.button} onPress={handleLogin}>
           <Text style={styles.buttonText}>Continuar</Text>
         </TouchableOpacity>
       </View>
