@@ -31,21 +31,22 @@ const LoginScreen = () => {
     }
     
     const userData = await authenticate(email, password);
-console.log('User  data:', userData.estado);
+    console.log('User  data:', userData.estado);
 
-if (userData.estado === true) {
-    // Almacenar datos del empleado en AsyncStorage
-    await AsyncStorage.setItem('employeeData', JSON.stringify(userData));
-    console.log('Login exitoso:', userData.estado);
+    if (userData.estado === true) {
+        // Almacenar datos del empleado en AsyncStorage
+        await AsyncStorage.setItem('employeeData', JSON.stringify(userData));
+        console.log('Login exitoso:', userData.estado);
 
-    // Aquí puedes establecer el usuario en el contexto si lo estás usando
-      AuthContext.setCurrentUser(userData.estado);
-    Alert.alert('Login exitoso', 'Bienvenido al sistema.');
-    navigation.navigate('TablesScreen');
-} else {const response = await doGet(`/empleado/${currentEmployeeData.id}/mesas`);
-console.log('Respuesta de mesas:', response);
-    Alert.alert('Error', 'Credenciales incorrectas.');
-}
+        // Aquí puedes establecer el usuario en el contexto si lo estás usando
+          //AuthContext.setCurrentUser(userData.estado);
+        Alert.alert('Login exitoso', 'Bienvenido al sistema.');
+        navigation.navigate('TablesScreen');
+    } else {
+        const response = await doGet(`/empleado/${currentEmployeeData.id}/mesas`);
+        console.log('Respuesta de mesas:', response);
+        Alert.alert('Error', 'Credenciales incorrectas.');
+    }
   };
 
   return (
