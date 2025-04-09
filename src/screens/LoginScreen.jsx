@@ -36,10 +36,10 @@ console.log('User  data:', userData.estado);
 if (userData.estado === true) {
     // Almacenar datos del empleado en AsyncStorage
     await AsyncStorage.setItem('employeeData', JSON.stringify(userData));
-
-    // Aquí puedes establecer el usuario en el contexto si lo estás usando
     console.log('Login exitoso:', userData.estado);
 
+    // Aquí puedes establecer el usuario en el contexto si lo estás usando
+      AuthContext.setCurrentUser(userData.estado);
     Alert.alert('Login exitoso', 'Bienvenido al sistema.');
     navigation.navigate('TablesScreen');
 } else {const response = await doGet(`/empleado/${currentEmployeeData.id}/mesas`);

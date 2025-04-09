@@ -3,168 +3,162 @@ import { View, Text, TextInput, TouchableOpacity, FlatList, Image, StyleSheet, S
 import { useNavigation } from '@react-navigation/native';
 import Header from '../components/Header';
 import { doGet } from '../axiosConfig/axiosInterceptor';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AccountScreen = () => {
-    const [dishes, setDishes] = useState([]);
-    const [selectedDishes, setSelectedDishes] = useState([]);
-    const [search, setSearch] = useState('');
-    const [modalVisible, setModalVisible] = useState(false);
-    const [dishToAdd, setDishToAdd] = useState(null);
-    const [quantity, setQuantity] = useState(1);
-    const [notes, setNotes] = useState('');
-    const navigation = useNavigation();
-    
-    const total = Array.isArray(selectedDishes) 
-    ? selectedDishes.reduce((acc, dish) => acc + (dish.precio * dish.quantity || 0), 0) 
-    : 0;
-    
-    useEffect(() => {
-      fetchDishes();
-    }, []);
-  
-    // Función para obtener todos los platillos desde la API
-    const fetchDishes = async () => {
-      try {
-        const data = await doGet('/producto');
-        setDishes(data);
-      } catch (error) {
-        console.error('Error fetching dishes:', error);
+  const [dishes, setDishes] = useState([]);
+  const [selectedDishes, setSelectedDishes] = useState([]);
+  const [search, setSearch] = useState('');
+  const [modalVisible, setModalVisible] = useState(false);
+  const [dishToAdd, setDishToAdd] = useState(null);
+  const [quantity, setQuantity] = useState(1);
+  const [notes, setNotes] = useState('');
+  const [ordenId, setOrdenId] = useState(null);
+
+  const navigation = useNavigation();
+
+  const total = selectedDishes.reduce((acc, dish) => acc + (dish.precio * dish.quantity || 0), 0);
+
+  useEffect(() => {
+    const fetchOrdenId = async () => {
+      const id = await AsyncStorage.getItem('cuenta_id');
+      if (id) {
+        setOrdenId(id);
+        fetchOrdenById(id);
       }
     };
-  
-    // Maneja la selección de un platillo y abre el modal para agregarlo
-    const handleSelectDish = (dish) => {
-      setDishToAdd(dish);
-      setQuantity(1);
-      setNotes('');
-      setModalVisible(true);
-    };
-  
-    // Confirma la adición del platillo seleccionado a la lista
-    const handleConfirmAddDish = () => {
-      setSelectedDishes((prev) => {
-        const existingDish = prev.find(dish => dish.id === dishToAdd.id);
-        if (existingDish) {
-          return prev.map(dish =>
-            dish.id === dishToAdd.id
-              ? { ...dish, quantity: dish.quantity + quantity, notes: notes || dish.notes }
-              : dish
-          );
-        } else {
-          return [...prev, { ...dishToAdd, quantity, notes }];
-        }
-      });
-      setModalVisible(false);
-      setDishToAdd(null);
-      setQuantity(1);
-      setNotes('');
-    };
-  
-    // Navega a la pantalla de confirmación con los platillos seleccionados
-    const handleGoToCart = () => {
-      navigation.navigate('QrScreen');
-    };
-  
-    return (
-      <View style={styles.container}>
-        <Header title="Genera una cuenta" />
-        
-        <StatusBar barStyle={modalVisible ? 'dark-content' : 'light-content'} backgroundColor={modalVisible ? 'rgb(83, 1, 29)' : '#a4113a'} />
-        
-        {/* Barra de búsqueda */}
-        <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchBar}
-            placeholder="Buscar platillo"
-            placeholderTextColor="#A0A0A0"
-            value={search}
-            onChangeText={setSearch}
-          />
-        </View>
-  
-        {/* Mostrar los platos con el filtro de búsqueda */}
-        <FlatList
-          data={dishes.filter(dish => dish.nombre.toLowerCase().includes(search.toLowerCase()))}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <TouchableOpacity style={styles.dishItem} onPress={() => handleSelectDish(item)}>
-              <Image source={{ uri: item.imagen }} style={styles.dishIcon} />
-              <View style={styles.dishDetails}>
-                <View style={{flexDirection:'row', justifyContent:'space-between'}}>
-                  <Text style={styles.dishName}>{item.nombre}</Text>
-                  <Text style={styles.dishName}>${item.precio}</Text>
-                </View>
-                <Text style={styles.dishDescription}>{item.descripcion}</Text>
-              </View>
-            </TouchableOpacity>
-          )}
-          contentContainerStyle={styles.flatListContent}
-          style={styles.flatList}
+    fetchOrdenId();
+    fetchDishes();
+  }, []);
+
+  const fetchDishes = async () => {
+    try {
+      const data = await doGet('/producto');
+      setDishes(data);
+    } catch (error) {
+      console.error('Error fetching dishes:', error);
+    }
+  };
+
+  const fetchOrdenById = async (ordenId) => {
+    try {
+      const data = await doGet(`/ordenes/${ordenId}`);
+      // Si existe una orden previa, agregarla al estado.
+    } catch (error) {
+      console.error('Error al obtener la orden:', error);
+    }
+  };
+
+  const handleSelectDish = (dish) => {
+    setDishToAdd(dish);
+    setQuantity(1);
+    setNotes('');
+    setModalVisible(true);
+  };
+
+  const handleConfirmAddDish = () => {
+    setSelectedDishes((prev) => {
+      const existingDish = prev.find(dish => dish.id === dishToAdd.id);
+      if (existingDish) {
+        return prev.map(dish =>
+          dish.id === dishToAdd.id
+            ? { ...dish, quantity: dish.quantity + quantity, notes: notes || dish.notes }
+            : dish
+        );
+      } else {
+        return [...prev, { ...dishToAdd, quantity, notes }];
+      }
+    });
+    setModalVisible(false);
+    setDishToAdd(null);
+    setQuantity(1);
+    setNotes('');
+  };
+
+  const handleGoToCart = () => {
+    navigation.navigate('QrScreen', { selectedDishes }); // Pasar selectedDishes a la siguiente pantalla
+  };
+
+  return (
+    <View>
+      <Header title="Genera una cuenta" />
+
+      <StatusBar barStyle={modalVisible ? 'dark-content' : 'light-content'} backgroundColor={modalVisible ? 'rgb(83, 1, 29)' : '#a4113a'} />
+
+      <View>
+        <TextInput
+          placeholder="Buscar platillo"
+          value={search}
+          onChangeText={setSearch}
         />
-  
-        
-        <View style={styles.footer}>
-            <Text style={styles.totalText}>Total: ${total.toFixed(2)}</Text>
-            <TouchableOpacity style={styles.confirmButton}>
-                <Text style={styles.confirmText}  onPress={handleGoToCart} >Liberar</Text>
-            </TouchableOpacity>
-        </View>
-  
-        {/* Modal para agregar cantidad y notas al platillo */}
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={() => setModalVisible(false)}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalView}>
-              {dishToAdd && (
-                <>
-                  {/* Imagen, nombre y control de cantidad */}
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '90%' }}>
-                    <Image source={{ uri: dishToAdd.imagen }} style={styles.modalImage} />
-                    <View style={{ alignItems: 'center', justifyContent: "center" }}>
-                      <Text style={styles.modalTitle}>{dishToAdd.nombre}</Text>
-                      <View style={styles.quantityContainer}>
-                        <TouchableOpacity onPress={() => setQuantity(Math.max(1, quantity - 1))}>
-                          <Text style={styles.quantityButton}>-</Text>
-                        </TouchableOpacity>
-                        <Text style={styles.quantityText}>{quantity}</Text>
-                        <TouchableOpacity onPress={() => setQuantity(quantity + 1)}>
-                          <Text style={styles.quantityButton}>+</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </View>
-  
-                  {/* Input para observaciones */}
-                  <TextInput
-                    style={styles.observationsInput}
-                    placeholder="Añadir observaciones..."
-                    placeholderTextColor="#A0A0A0"
-                    multiline
-                    value={notes}
-                    onChangeText={setNotes}
-                  />
-  
-                  {/* Botón para confirmar y agregar platillo */}
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-evenly', width: '100%' }}>
-                    <TouchableOpacity style={styles.cancelButton} onPress={() => setModalVisible(false)}>
-                      <Text style={styles.cancelButtonText}>Cancelar</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmAddDish}>
-                      <Text style={styles.confirmButtonText}>Agregar</Text>
-                    </TouchableOpacity>
-                  </View>
-                </>
-              )}
-            </View>
-          </View>
-        </Modal>
       </View>
-    );
-  };  
+
+      <FlatList
+        data={dishes.filter(dish => dish.nombre.toLowerCase().includes(search.toLowerCase()))}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <TouchableOpacity onPress={() => handleSelectDish(item)}>
+            <Image source={{ uri: item.imagen }} />
+            <View>
+              <Text>{item.nombre}</Text>
+              <Text>${item.precio}</Text>
+            </View>
+            <Text>{item.descripcion}</Text>
+          </TouchableOpacity>
+        )}
+      />
+
+      <View>
+        <Text>Total: ${total.toFixed(2)}</Text>
+        <TouchableOpacity onPress={handleGoToCart}>
+          <Text>Liberar</Text>
+        </TouchableOpacity>
+      </View>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View>
+          <View>
+            {dishToAdd && (
+              <>
+                <Image source={{ uri: dishToAdd.imagen }} />
+                <Text>{dishToAdd.nombre}</Text>
+                <TouchableOpacity onPress={() => setQuantity(Math.max(1, quantity - 1))}>
+                  <Text>-</Text>
+                </TouchableOpacity>
+                <Text>{quantity}</Text>
+                <TouchableOpacity onPress={() => setQuantity(quantity + 1)}>
+                  <Text>+</Text>
+                </TouchableOpacity>
+
+                <TextInput
+                  placeholder="Añadir observaciones..."
+                  multiline
+                  value={notes}
+                  onChangeText={setNotes}
+                />
+
+                <TouchableOpacity onPress={() => setModalVisible(false)}>
+                  <Text>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleConfirmAddDish}>
+                  <Text>Agregar</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+};
+
+
+
 
 const styles = StyleSheet.create({
   container: {

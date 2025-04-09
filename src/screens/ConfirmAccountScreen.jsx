@@ -2,13 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, FlatList, Image, StyleSheet, Modal, TextInput, StatusBar, Alert } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Header from '../components/Header';
-import { doGet, doPost, authenticate } from '../axiosConfig/axiosInterceptor';
+import { doPost, authenticate } from '../axiosConfig/axiosInterceptor';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ConfirmAccountScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { selectedDishes } = route.params;
+  const { selectedDishes } = route.params; // Recibir los platillos seleccionados
 
   const [dishes, setDishes] = useState(selectedDishes);
   const [modalVisible, setModalVisible] = useState(false);
@@ -17,9 +17,7 @@ const ConfirmAccountScreen = () => {
   const [employeeData, setEmployeeData] = useState(null);
   const isMounted = useRef(true);
 
-  const total = Array.isArray(dishes)
-    ? dishes.reduce((acc, { precio, quantity }) => acc + precio * (quantity || 0), 0)
-    : 0;
+  const total = dishes.reduce((acc, { precio, quantity }) => acc + precio * (quantity || 0), 0);
 
   const openModal = (dish) => {
     setCurrentDish(dish);
@@ -44,7 +42,7 @@ const ConfirmAccountScreen = () => {
 
   const updateDish = () => {
     setDishes(dishes.map(dish =>
-      dish.name === currentDish.name
+      dish.id === currentDish.id
         ? { ...dish, quantity: currentDish.quantity, notes: observations }
         : dish
     ));
@@ -87,50 +85,21 @@ const ConfirmAccountScreen = () => {
         return;
       }
 
-      const mesasResponse = await doGet(`/empleado/${currentEmployeeData.id}/mesas`);
-      if (!mesasResponse?.length) {
-        mostrarError('Sin mesas', 'No se encontraron mesas asignadas.');
-        return;
-      }
-
-      if (!dishes?.length) {
-        mostrarError('Sin productos', 'No hay productos seleccionados.');
-        return;
-      }
-
       const data = {
-        fecha: new Date().toISOString(),
-        estado: "pendiente",
-        comentario: observations,
-        cantidad: total,
-        mesa: { id: mesasResponse[0].id },
-        detalles: dishes.map(({ id, quantity }) => ({
-          producto: { id },
-          cantidad: quantity
-        }))
+        platillos: dishes,
+        empleadoId: currentEmployeeData.id,
       };
 
       const ordenResponse = await doPost('/ordenes', data);
-      console.log('✅ Orden registrada:', ordenResponse);
+      await AsyncStorage.setItem('cuenta_id', String(ordenResponse.id)); // Guardar el ID de la orden
+
       Alert.alert('Orden registrada', 'Tu orden ha sido enviada correctamente.');
       navigation.pop(2);
     } catch (error) {
       console.error('❌ Error al enviar la solicitud:', error);
-      if (error.response) {
-        console.error('Respuesta del servidor:', error.response.data);
-      }
       mostrarError('Error', 'Ocurrió un error al registrar la orden. Inténtalo de nuevo.');
     }
   };
-
-  const renderDish = ({ item }) => (
-    <TouchableOpacity style={styles.dishItem} onPress={() => openModal(item)}>
-      <Image source={{ uri: item.imagen }} style={styles.dishIcon} />
-      <Text style={styles.dishName}>{item.nombre}</Text>
-      <Text style={styles.dishPrice}>${(item.precio * item.quantity).toFixed(2)}</Text>
-      <Text style={styles.dishQuantity}>x{item.quantity}</Text>
-    </TouchableOpacity>
-  );
 
   return (
     <View style={styles.container}>
@@ -139,7 +108,14 @@ const ConfirmAccountScreen = () => {
 
       <FlatList
         data={dishes}
-        renderItem={renderDish}
+        renderItem={({ item }) => (
+          <TouchableOpacity style={styles.dishItem} onPress={() => openModal(item)}>
+            <Image source={{ uri: item.imagen }} style={styles.dishIcon} />
+            <Text style={styles.dishName}>{item.nombre}</Text>
+            <Text style={styles.dishPrice}>${(item.precio * item.quantity).toFixed(2)}</Text>
+            <Text style={styles.dishQuantity}>x{item.quantity}</Text>
+          </TouchableOpacity>
+        )}
         keyExtractor={(item) => item.id.toString()}
       />
 
