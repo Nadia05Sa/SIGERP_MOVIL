@@ -106,7 +106,6 @@ const TablesScreen = () => {
             setTables(updatedTables); // Actualiza el estado de las mesas
 
             Alert.alert("Éxito", `La mesa ${table.nombre} ha sido cerrada correctamente.`);
-            navigation.navigate('QrScreen', { tableId: table.id }); // Redirige a QrScreen
         } catch (error) {
             console.error('Error al cerrar la mesa:', error);
             Alert.alert('Error', 'No se pudo cerrar la mesa. Por favor, intenta de nuevo.');

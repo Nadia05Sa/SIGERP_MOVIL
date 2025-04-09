@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, Image, StyleSheet, Modal, TextInput, StatusBar } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Header from '../components/Header';
+import axios from 'axios'; // Importa Axios
 
 const ConfirmAccountScreen = () => {
   const navigation = useNavigation();
@@ -16,19 +17,50 @@ const ConfirmAccountScreen = () => {
 
   const openModal = (dish) => {
     setCurrentDish(dish);
-    setObservations(dish.notes || ''); // Asegúrate de usar 'notes' en lugar de 'observations'
+    setObservations(dish.notes || '');
     setModalVisible(true);
   };
-  
-  const handleGoToCart = () => {
-    navigation.pop(2);
-    //agragar endpoint para api
+
+  const handleGoToCart = async () => {
+    const data = {
+      fecha: new Date().toISOString().split('T')[0], // Fecha actual
+      estado: "pendiente",
+      comentario: observations, // Usa las observaciones como comentario
+      cantidad: total, // Total de la cuenta
+      mesa: {
+        id: "67dc32145e484c4bd8c960cc" // Cambia esto según tu lógica
+      },
+      productos: dishes.map(dish => ({
+        id: dish.id // Asegúrate de que cada plato tenga un id
+      }))
+    };
+
+    const config = {
+      method: 'post',
+      maxBodyLength: Infinity,
+      url: 'http://localhost:8080/api/ordenes',
+      headers: { 
+        'Content-Type': 'application/json', 
+        'Cookie': 'JSESSIONID=220D34D5E2E37CEB9588C90C1B435D8D'
+      },
+      data: JSON.stringify(data)
+    };
+
+    try {
+      const response = await axios.request(config);
+      console.log('Respuesta del servidor:', JSON.stringify(response.data));
+      // Aquí puedes navegar a otra pantalla o mostrar un mensaje de éxito
+      navigation.pop(2); // Regresa a la pantalla anterior
+    } catch (error) {
+      console.error('Error al enviar la solicitud:', error);
+      // Maneja el error, por ejemplo, mostrando un mensaje al usuario
+    }
   };
 
   const updateDish = () => {
     setDishes(dishes.map(dish =>
       dish.name === currentDish.name
-        ? { ...dish, quantity: currentDish.quantity, notes: observations } // Actualiza las observaciones
+        ? { ...dish, quantity: currentDish.quantity, notes: observations }
         : dish
     ));
     closeModal();
@@ -57,23 +89,22 @@ const ConfirmAccountScreen = () => {
       <Text style={styles.dishQuantity}>x{item.quantity}</Text>
     </TouchableOpacity>
   );
-  console.log('platillo 1',dishes);
+
   return (
     <View style={styles.container}>
       <Header title="Confirma la cuenta" />
-      {/* Cambia el color de la barra de estado según el estado del modal */}
       <StatusBar barStyle={modalVisible ? 'dark-content' : 'light-content'} backgroundColor={modalVisible ? 'rgb(83, 1, 29)' : '#a4113a'} />
   
       <FlatList
         data={dishes}
         renderItem={renderDish}
-        keyExtractor={(item) => item.id.toString()} // Asegúrate de convertir el id a string
+        keyExtractor={(item) => item.id.toString()}
       />
 
       <View style={styles.footer}>
         <Text style={styles.totalText}>Total: ${total.toFixed(2)}</Text>
-        <TouchableOpacity style={styles.confirmButton}>
-          <Text style={styles.confirmText}  onPress={handleGoToCart} >Confirmar</Text>
+        <TouchableOpacity style={styles.confirmButton} onPress={handleGoToCart}>
+          <Text style={styles.confirmText}>Confirmar</Text>
         </TouchableOpacity>
       </View>
 
@@ -83,19 +114,15 @@ const ConfirmAccountScreen = () => {
             {currentDish && (
               <>
                 <View style={{flexDirection:'row', justifyContent: 'space-between', width:'90%'}}>
-                <Image source={{ uri: currentDish.imagen }} style={styles.modalImage} />
-                  
+                  <Image source={{ uri: currentDish.imagen }} style={styles.modalImage} />
                   <View style={{alignItems: 'center', justifyContent:"center"}}>
                     <Text style={styles.modalTitle}>{currentDish.nombre}</Text>
                     <View style={styles.counterContainer}>
                       <TouchableOpacity style={styles.counterButton} onPress={decrementQuantity}><Text>-</Text></TouchableOpacity>
-                        <Text style={styles.counterText}>{currentDish.quantity}</Text>
+                      <Text style={styles.counterText}>{currentDish.quantity}</Text>
                       <TouchableOpacity style={styles.counterButton} onPress={incrementQuantity}><Text>+</Text></TouchableOpacity>
                     </View>
                   </View>
-                  
-
-
                 </View>
                 
                 <TextInput
@@ -103,8 +130,8 @@ const ConfirmAccountScreen = () => {
                   placeholder="Observaciones"
                   placeholderTextColor="#A0A0A0"
                   multiline
-                  value={observations} // Muestra las observaciones actuales
-                  onChangeText={setObservations} // Actualiza el estado de las observaciones
+                  value={observations}
+                  onChangeText={setObservations}
                 />
                 <View style={{flexDirection:'row', justifyContent: 'space-between', width:'80%'}}>
                   <TouchableOpacity style={styles.cancelButton} onPress={closeModal}>
@@ -114,7 +141,6 @@ const ConfirmAccountScreen = () => {
                     <Text style={styles.buttonText}>Guardar</Text>
                   </TouchableOpacity>
                 </View>
-                
               </>
             )}
           </View>
@@ -123,6 +149,8 @@ const ConfirmAccountScreen = () => {
     </View>
   );
 };
+
+
 
 const styles = StyleSheet.create({
   container: { 
