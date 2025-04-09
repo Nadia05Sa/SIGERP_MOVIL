@@ -5,8 +5,7 @@ import { URL_SIGERP } from "./config";
 const api = axios.create({
     baseURL: URL_SIGERP,
     headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc0MzQwODAyOCwiZXhwIjoxNzQzNDk0NDI4fQ.8scOiWaVRTvYSglRLyjrCzZX2zwkd11C2k_vBox1enFv5dXLIb4fH2WZfBUxzVEEwr8o2AXUAWQ_LYit6oS2aw'
+        'Content-Type': 'application/json'
     }
 });
 

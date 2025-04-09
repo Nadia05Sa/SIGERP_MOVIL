@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, Image, StyleSheet, StatusBar, Modal } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, Image, StyleSheet, StatusBar, Modal, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Header from '../components/Header';
 import { doGet } from '../axiosConfig/axiosInterceptor';
@@ -8,6 +8,8 @@ const CreateAccountScreen = () => {
   const [categories, setCategories] = useState([]);
   const [selectedDishes, setSelectedDishes] = useState([]);
   const [search, setSearch] = useState('');
+  const [dishes, setDishes] = useState([]); 
+  const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [dishToAdd, setDishToAdd] = useState(null);
@@ -15,6 +17,7 @@ const CreateAccountScreen = () => {
   const [notes, setNotes] = useState('');
   const navigation = useNavigation();
 
+  // Cargar categorías al iniciar
   useEffect(() => {
     fetchCategories();
   }, []);
@@ -36,10 +39,16 @@ const CreateAccountScreen = () => {
   // Función para obtener los platos de una categoría específica
   const fetchDishes = async (categoryId) => {
     try {
-      const data = await doGet('/producto', { categoria: categoryId });
-      setSelectedCategory(prev => ({ ...prev, dishes: data }));
+      setLoading(true);
+      console.log('Fetching dishes for category ID:', categoryId);
+      const data = await doGet(`/producto/categoria/${categoryId}`);
+      console.log('Platillos',data);
+      setDishes(Array.isArray(data) ? data : []); // Asegura que sea un arreglo
     } catch (error) {
-      console.error('Error fetching dishes:', error);
+      console.error('Error fetching dishes by category:', error);
+      setDishes([]); // En caso de error, evita dejarlo en undefined
+    }finally {
+      setLoading(false); // 👈 Finaliza la carga
     }
   };
 
@@ -122,15 +131,24 @@ const CreateAccountScreen = () => {
       </View>
 
       {/* Mostrar los platos de la categoría seleccionada con el filtro de búsqueda */}
-      {selectedCategory && (
+      {loading ? (
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color="#9B1C31" />
+          <Text style={styles.loaderText}>Cargando platillos...</Text>
+        </View>
+      ) : dishes.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No hay platillos disponibles</Text>
+        </View>
+      ) : (
         <FlatList
-          data={selectedCategory.dishes?.filter(dish => dish.nombre.toLowerCase().includes(search.toLowerCase())) || []}
+          data={dishes.filter(dish => dish.nombre.toLowerCase().includes(search.toLowerCase()))}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <TouchableOpacity style={styles.dishItem} onPress={() => handleSelectDish(item)}>
               <Image source={{ uri: item.imagen }} style={styles.dishIcon} />
               <View style={styles.dishDetails}>
-                <View style={{flexDirection:'row', justifyContent:'space-between'}}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                   <Text style={styles.dishName}>{item.nombre}</Text>
                   <Text style={styles.dishName}>${item.precio}</Text>
                 </View>
@@ -366,6 +384,28 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     color: '#000',
     fontWeight: 'bold',
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  loaderText: {
+    paddingTop: 10,
+    fontSize: 16,
+    color: '#555',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#999',
+    fontStyle: 'italic',
   },
 });
 

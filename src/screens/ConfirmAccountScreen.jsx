@@ -1,69 +1,30 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList, Image, StyleSheet, Modal, TextInput, StatusBar } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, FlatList, Image, StyleSheet, Modal, TextInput, StatusBar, Alert } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Header from '../components/Header';
-import axios from 'axios'; // Importa Axios
+import { doGet, doPost, authenticate } from '../axiosConfig/axiosInterceptor';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ConfirmAccountScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { selectedDishes } = route.params;
+
   const [dishes, setDishes] = useState(selectedDishes);
   const [modalVisible, setModalVisible] = useState(false);
   const [currentDish, setCurrentDish] = useState(null);
   const [observations, setObservations] = useState('');
+  const [employeeData, setEmployeeData] = useState(null);
+  const isMounted = useRef(true);
 
-  const total = Array.isArray(dishes) ? dishes.reduce((acc, dish) => acc + (dish.precio * dish.quantity || 0), 0) : 0;
+  const total = Array.isArray(dishes)
+    ? dishes.reduce((acc, { precio, quantity }) => acc + precio * (quantity || 0), 0)
+    : 0;
 
   const openModal = (dish) => {
     setCurrentDish(dish);
     setObservations(dish.notes || '');
     setModalVisible(true);
-  };
-
-  const handleGoToCart = async () => {
-    const data = {
-      fecha: new Date().toISOString().split('T')[0], // Fecha actual
-      estado: "pendiente",
-      comentario: observations, // Usa las observaciones como comentario
-      cantidad: total, // Total de la cuenta
-      mesa: {
-        id: "67dc32145e484c4bd8c960cc" // Cambia esto según tu lógica
-      },
-      productos: dishes.map(dish => ({
-        id: dish.id // Asegúrate de que cada plato tenga un id
-      }))
-    };
-
-    const config = {
-      method: 'post',
-      maxBodyLength: Infinity,
-      url: 'http://localhost:8080/api/ordenes',
-      headers: { 
-        'Content-Type': 'application/json', 
-        'Cookie': 'JSESSIONID=220D34D5E2E37CEB9588C90C1B435D8D'
-      },
-      data: JSON.stringify(data)
-    };
-
-    try {
-      const response = await axios.request(config);
-      console.log('Respuesta del servidor:', JSON.stringify(response.data));
-      // Aquí puedes navegar a otra pantalla o mostrar un mensaje de éxito
-      navigation.pop(2); // Regresa a la pantalla anterior
-    } catch (error) {
-      console.error('Error al enviar la solicitud:', error);
-      // Maneja el error, por ejemplo, mostrando un mensaje al usuario
-    }
-  };
-
-  const updateDish = () => {
-    setDishes(dishes.map(dish =>
-      dish.name === currentDish.name
-        ? { ...dish, quantity: currentDish.quantity, notes: observations }
-        : dish
-    ));
-    closeModal();
   };
 
   const closeModal = () => {
@@ -81,6 +42,87 @@ const ConfirmAccountScreen = () => {
     }
   };
 
+  const updateDish = () => {
+    setDishes(dishes.map(dish =>
+      dish.name === currentDish.name
+        ? { ...dish, quantity: currentDish.quantity, notes: observations }
+        : dish
+    ));
+    closeModal();
+  };
+
+  const mostrarError = (titulo, mensaje) => {
+    Alert.alert(titulo, mensaje, [{ text: 'OK' }]);
+  };
+
+  const getEmployeeData = async () => {
+    try {
+      const jsonValue = await AsyncStorage.getItem('employeeData');
+      if (jsonValue) {
+        const data = JSON.parse(jsonValue);
+        setEmployeeData(data);
+        return data;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error al obtener datos del empleado:', error);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      await getEmployeeData();
+    };
+    fetchData();
+    return () => { isMounted.current = false; };
+  }, []);
+
+  const handleGoToCart = async () => {
+    try {
+      const currentEmployeeData = employeeData || await getEmployeeData();
+
+      if (!currentEmployeeData?.id) {
+        mostrarError('Error', 'No se pudo obtener la información del empleado. Por favor, inicia sesión nuevamente.');
+        return;
+      }
+
+      const mesasResponse = await doGet(`/empleado/${currentEmployeeData.id}/mesas`);
+      if (!mesasResponse?.length) {
+        mostrarError('Sin mesas', 'No se encontraron mesas asignadas.');
+        return;
+      }
+
+      if (!dishes?.length) {
+        mostrarError('Sin productos', 'No hay productos seleccionados.');
+        return;
+      }
+
+      const data = {
+        fecha: new Date().toISOString(),
+        estado: "pendiente",
+        comentario: observations,
+        cantidad: total,
+        mesa: { id: mesasResponse[0].id },
+        detalles: dishes.map(({ id, quantity }) => ({
+          producto: { id },
+          cantidad: quantity
+        }))
+      };
+
+      const ordenResponse = await doPost('/ordenes', data);
+      console.log('✅ Orden registrada:', ordenResponse);
+      Alert.alert('Orden registrada', 'Tu orden ha sido enviada correctamente.');
+      navigation.pop(2);
+    } catch (error) {
+      console.error('❌ Error al enviar la solicitud:', error);
+      if (error.response) {
+        console.error('Respuesta del servidor:', error.response.data);
+      }
+      mostrarError('Error', 'Ocurrió un error al registrar la orden. Inténtalo de nuevo.');
+    }
+  };
+
   const renderDish = ({ item }) => (
     <TouchableOpacity style={styles.dishItem} onPress={() => openModal(item)}>
       <Image source={{ uri: item.imagen }} style={styles.dishIcon} />
@@ -94,7 +136,7 @@ const ConfirmAccountScreen = () => {
     <View style={styles.container}>
       <Header title="Confirma la cuenta" />
       <StatusBar barStyle={modalVisible ? 'dark-content' : 'light-content'} backgroundColor={modalVisible ? 'rgb(83, 1, 29)' : '#a4113a'} />
-  
+
       <FlatList
         data={dishes}
         renderItem={renderDish}
@@ -113,9 +155,9 @@ const ConfirmAccountScreen = () => {
           <View style={styles.modalView}>
             {currentDish && (
               <>
-                <View style={{flexDirection:'row', justifyContent: 'space-between', width:'90%'}}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '90%' }}>
                   <Image source={{ uri: currentDish.imagen }} style={styles.modalImage} />
-                  <View style={{alignItems: 'center', justifyContent:"center"}}>
+                  <View style={{ alignItems: 'center', justifyContent: "center" }}>
                     <Text style={styles.modalTitle}>{currentDish.nombre}</Text>
                     <View style={styles.counterContainer}>
                       <TouchableOpacity style={styles.counterButton} onPress={decrementQuantity}><Text>-</Text></TouchableOpacity>
@@ -124,7 +166,7 @@ const ConfirmAccountScreen = () => {
                     </View>
                   </View>
                 </View>
-                
+
                 <TextInput
                   style={styles.input}
                   placeholder="Observaciones"
@@ -133,7 +175,7 @@ const ConfirmAccountScreen = () => {
                   value={observations}
                   onChangeText={setObservations}
                 />
-                <View style={{flexDirection:'row', justifyContent: 'space-between', width:'80%'}}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '80%' }}>
                   <TouchableOpacity style={styles.cancelButton} onPress={closeModal}>
                     <Text style={styles.buttonText}>Cancelar</Text>
                   </TouchableOpacity>
