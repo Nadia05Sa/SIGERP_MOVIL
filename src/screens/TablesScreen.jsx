@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Alert, StyleSheet, FlatList, Image, Modal, StatusBar, ActivityIndicator } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -6,21 +7,20 @@ import { doGet } from '../axiosConfig/axiosInterceptor';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const TablesScreen = () => {
-    const [tables, setTables] = useState([]); // Estado para almacenar las mesas
-    const [selectedTable, setSelectedTable] = useState(null); // Mesa seleccionada para mostrar en el modal
-    const [modalVisible, setModalVisible] = useState(false); // Controla la visibilidad del modal
-    const [loading, setLoading] = useState(true); // Estado de carga para mostrar un indicador de carga
-    const [employeeData, setEmployeeData] = useState(null); // Datos del empleado
-    const navigation = useNavigation(); // Hook para la navegación
-    const isMounted = useRef(true); // Referencia para verificar si el componente está montado
+    const [tables, setTables] = useState([]);
+    const [selectedTable, setSelectedTable] = useState(null);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [employeeData, setEmployeeData] = useState(null);
+    const navigation = useNavigation();
+    const isMounted = useRef(true);
 
-    // Obtener los datos del empleado del almacenamiento local
     const getEmployeeData = async () => {
         try {
             const jsonValue = await AsyncStorage.getItem('employeeData');
             if (jsonValue !== null) {
                 const data = JSON.parse(jsonValue);
-                setEmployeeData(data); // Almacena los datos del empleado en el estado
+                setEmployeeData(data);
                 return data;
             }
             return null;
@@ -30,22 +30,20 @@ const TablesScreen = () => {
         }
     };
 
-    // Cargar los datos del empleado cuando se monta el componente
     useEffect(() => {
         getEmployeeData();
         return () => {
-            isMounted.current = false; // Limpieza al desmontar el componente
+            isMounted.current = false;
         };
     }, []);
 
-    // Función para obtener las mesas del empleado logueado
     const fetchTables = useCallback(async () => {
         try {
-            setLoading(true); // Inicia el estado de carga
+            setLoading(true);
             
             let currentEmployeeData = employeeData;
             if (!currentEmployeeData) {
-                currentEmployeeData = await getEmployeeData(); // Obtiene los datos del empleado si no están en el estado
+                currentEmployeeData = await getEmployeeData();
             }
             
             if (!currentEmployeeData || !currentEmployeeData.id) {
@@ -54,13 +52,11 @@ const TablesScreen = () => {
                 return;
             }
             
-            // Hacer la llamada API para obtener las mesas de este empleado
             const response = await doGet(`/empleado/${currentEmployeeData.id}/mesas`);
             
-            // Asegúrate de que la respuesta tenga la estructura correcta
             if (Array.isArray(response)) {
-                const activeTables = response.filter(table => table.estado === true); // Filtra las mesas activas
-                setTables(activeTables); // Actualiza el estado con las mesas activas
+                const activeTables = response.filter(table => table.estado === true);
+                setTables(activeTables);
             } else {
                 Alert.alert('Error', 'No se pudieron obtener las mesas. Por favor, intenta de nuevo.');
             }
@@ -71,72 +67,65 @@ const TablesScreen = () => {
             }
         } finally {
             if (isMounted.current) {
-                setLoading(false); // Finaliza el estado de carga
+                setLoading(false);
             }
         }
     }, [employeeData]);
 
-    // Efecto que se ejecuta al enfocar la pantalla
     useFocusEffect(
         useCallback(() => {
-            fetchTables(); // Llama a la función para obtener las mesas
+            fetchTables();
             return () => {};
         }, [fetchTables])
     );
 
-    // Maneja la selección de una mesa
     const handlePressTable = useCallback((table) => {
-        setSelectedTable(table); // Establece la mesa seleccionada
-        setModalVisible(true); // Muestra el modal
+        setSelectedTable(table);
+        setModalVisible(true);
     }, []);
 
-    // Función para cerrar la mesa
     const closeTable = useCallback(async (table) => {
         try {
-            setModalVisible(false); // Cierra el modal
-            setLoading(true); // Inicia el estado de carga
-            
-            // Aquí debes implementar la llamada a la API para cerrar la mesa
-            // await doPatch(`/mesas/${table.id}/cerrar`);
-            
+            setModalVisible(false);
+            setLoading(true);
+
             // Simulación de cierre de mesa
             const updatedTables = tables.map(t => 
                 t.id === table.id ? { ...t, estado: false } : t
             );
-            setTables(updatedTables); // Actualiza el estado de las mesas
+            setTables(updatedTables);
 
             Alert.alert("Éxito", `La mesa ${table.nombre} ha sido cerrada correctamente.`);
         } catch (error) {
             console.error('Error al cerrar la mesa:', error);
             Alert.alert('Error', 'No se pudo cerrar la mesa. Por favor, intenta de nuevo.');
         } finally {
-            setLoading(false); // Finaliza el estado de carga
+            setLoading(false);
         }
-    }, [tables, navigation]);
+    }, [tables]);
 
-    // Navega a la pantalla para agregar platillos
     const handleAddDishes = useCallback(() => {
         if (!selectedTable) return;
-        
-        setModalVisible(false); // Cierra el modal
+
+        setModalVisible(false);
+        console.log("Enviando a CreateAccountScreen con tableId:", selectedTable.id); // <- Verificación
         navigation.navigate('CreateAccountScreen', {
             tableId: selectedTable.id,
             tableName: selectedTable.nombre
         });
     }, [selectedTable, navigation]);
 
-    // Navega a la pantalla de cuenta
     const handleViewAccount = useCallback(() => {
         if (!selectedTable) return;
-        
-        setModalVisible(false); // Cierra el modal
+
+        setModalVisible(false);
+        console.log("Enviando a AccountScreen con tableId:", selectedTable.id); // <- Verificación
         navigation.navigate('AccountScreen', {
             tableId: selectedTable.id,
             tableName: selectedTable.nombre
         });    
     }, [selectedTable, navigation]);
 
-    // Maneja la acción de cerrar la mesa
     const handleCloseTable = useCallback(() => {
         if (!selectedTable) return;
 
@@ -145,17 +134,16 @@ const TablesScreen = () => {
             `¿Estás seguro de que deseas cerrar la mesa ${selectedTable.nombre}?`,
             [
                 { text: 'Cancelar', style: 'cancel' },
-                { text: 'Cerrar', onPress: () => closeTable(selectedTable) } // Cierra la mesa si se confirma
+                { text: 'Cerrar', onPress: () => closeTable(selectedTable) }
             ]
         );
     }, [selectedTable, closeTable]);
 
-    // Renderiza cada elemento de la lista de mesas
     const renderItem = useCallback(({ item }) => (
         <TouchableOpacity
             style={[styles.tableItem, styles.tableEnabled]}
-            onPress={() => handlePressTable(item)} // Maneja la selección de la mesa
-            disabled={!item.estado} // Deshabilita la mesa si está cerrada
+            onPress={() => handlePressTable(item)}
+            disabled={!item.estado}
         >
             <Image
                 source={
@@ -172,7 +160,6 @@ const TablesScreen = () => {
         </TouchableOpacity>
     ), [handlePressTable]);
 
-    // Muestra un indicador de carga mientras se obtienen las mesas
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
@@ -184,49 +171,24 @@ const TablesScreen = () => {
 
     return (
         <View style={styles.container}>
-            <StatusBar 
-                barStyle={modalVisible ? 'dark-content' : 'light-content'} 
-                backgroundColor={modalVisible ? 'rgb(83, 1, 29)' : '#a4113a'} 
+            <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+            <Header title="Mesas disponibles" />
+            <FlatList
+                data={tables}
+                renderItem={renderItem}
+                keyExtractor={item => item.id.toString()}
+                contentContainerStyle={styles.list}
+                numColumns={2}
             />
-            <Header 
-                title="Tus mesas" 
-                rightAction={fetchTables} // Acción para refrescar la lista de mesas
-                rightIcon="refresh"
-            />
-            
-            {tables.length === 0 ? (
-                <View style={styles.emptyState}>
-                    <Text style={styles.emptyStateText}>No hay mesas disponibles</Text>
-                    <TouchableOpacity 
-                        style={styles.refreshButton}
-                        onPress={fetchTables} // Refresca la lista de mesas
-                    >
-                        <Text style={styles.refreshButtonText}>Actualizar</Text>
-                    </TouchableOpacity>
-                </View>
-            ) : (
-                <FlatList
-                    data={tables}
-                    renderItem={renderItem} // Renderiza las mesas
-                    keyExtractor={(item) => `mesa-${item.id}`} // Clave única para cada mesa
-                    numColumns={2} // Número de columnas en la lista
-                    contentContainerStyle={styles.listContainer}
-                    refreshing={loading} // Estado de carga para el FlatList
-                    onRefresh={fetchTables} // Refresca la lista al hacer pull
-                />
-            )}
-            
-            <Modal 
-                animationType="slide" 
-                transparent={true} 
-                visible={modalVisible && selectedTable !== null} // Muestra el modal si está visible y hay una mesa seleccionada
-                onRequestClose={() => setModalVisible(false)} // Cierra el modal al presionar el botón de retroceso
+            <Modal
+                visible={modalVisible}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setModalVisible(false)}
             >
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalView}>
-                        <Text style={styles.modalTitle}>
-                            Opciones para {selectedTable?.nombre || 'la mesa'}
-                        </Text>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContainer}>
+                        <Text style={styles.modalTitle}>Mesa {selectedTable?.nombre}</Text>
                         <TouchableOpacity style={styles.modalButton} onPress={handleAddDishes}>
                             <Text style={styles.modalButtonText}>Agregar platillos</Text>
                         </TouchableOpacity>
@@ -236,8 +198,8 @@ const TablesScreen = () => {
                         <TouchableOpacity style={styles.modalButton} onPress={handleCloseTable}>
                             <Text style={styles.modalButtonText}>Cerrar mesa</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.cancelButton} onPress={() => setModalVisible(false)}>
-                            <Text style={styles.cancelButtonText}>Cancelar</Text>
+                        <TouchableOpacity style={styles.modalCancel} onPress={() => setModalVisible(false)}>
+                            <Text style={styles.modalCancelText}>Cancelar</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -245,7 +207,6 @@ const TablesScreen = () => {
         </View>
     );
 };
-
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F5F5F5' },
     listContainer: { marginTop: -10, alignItems: 'center' },
