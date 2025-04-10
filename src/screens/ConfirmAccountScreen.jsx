@@ -8,7 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const ConfirmAccountScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { selectedDishes } = route.params; // Recibir los platillos seleccionados
+  const { selectedDishes, mesaId } = route.params; // Recibir los platillos seleccionados y la mesa
 
   const [dishes, setDishes] = useState(selectedDishes);
   const [modalVisible, setModalVisible] = useState(false);
@@ -85,13 +85,27 @@ const ConfirmAccountScreen = () => {
         return;
       }
 
+      if (!mesaId) {
+        mostrarError('Error', 'No se ha seleccionado una mesa. Verifica e intenta nuevamente.');
+        return;
+      }
+
+      const detalles = dishes.map(dish => ({
+        producto: { id: dish.id },
+        cantidad: dish.quantity,
+        nota: dish.notes || ''
+      }));
+
       const data = {
-        platillos: dishes,
-        empleadoId: currentEmployeeData.id,
+        fecha: new Date().toISOString(),
+        estado: false,
+        comentario: '',
+        mesa: { id: mesaId },
+        detalles: detalles
       };
 
       const ordenResponse = await doPost('/ordenes', data);
-      await AsyncStorage.setItem('cuenta_id', String(ordenResponse.id)); // Guardar el ID de la orden
+      await AsyncStorage.setItem('cuenta_id', String(ordenResponse.id));
 
       Alert.alert('Orden registrada', 'Tu orden ha sido enviada correctamente.');
       navigation.pop(2);
@@ -167,8 +181,6 @@ const ConfirmAccountScreen = () => {
     </View>
   );
 };
-
-
 
 const styles = StyleSheet.create({
   container: { 

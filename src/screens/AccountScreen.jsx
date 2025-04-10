@@ -106,16 +106,96 @@ const AccountScreen = () => {
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.container}>
       <Header title={`Cuenta - ${tableName}`} />
-      <Text>Total: €{total.toFixed(2)}</Text>
-      {/* Aquí podrías renderizar los platillos y el botón para continuar */}
-      <TouchableOpacity onPress={handleGoToCart}>
-        <Text>Ver QR / Confirmar pedido</Text>
-      </TouchableOpacity>
+  
+      <StatusBar
+        barStyle={modalVisible ? 'dark-content' : 'light-content'}
+        backgroundColor={modalVisible ? 'rgb(83, 1, 29)' : '#a4113a'}
+      />
+  
+      <View style={styles.searchContainer}>
+        <TextInput
+          placeholder="Buscar platillo"
+          value={search}
+          onChangeText={setSearch}
+          style={styles.searchBar}
+        />
+      </View>
+  
+      <FlatList
+        data={dishes.filter(dish => dish.nombre.toLowerCase().includes(search.toLowerCase()))}
+        keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={styles.flatListContent}
+        renderItem={({ item }) => (
+          <TouchableOpacity onPress={() => handleSelectDish(item)} style={styles.dishItem}>
+            <Image source={{ uri: item.imagen }} style={styles.dishIcon} />
+            <View style={styles.dishDetails}>
+              <Text style={styles.dishName}>{item.nombre}</Text>
+              <Text style={styles.dishDescription}>${item.precio}</Text>
+              <Text>{item.descripcion}</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+      />
+  
+      <View style={styles.footer}>
+        <Text style={styles.totalText}>Total: ${total.toFixed(2)}</Text>
+        <TouchableOpacity style={styles.confirmButton} onPress={handleGoToCart}>
+          <Text style={styles.confirmText}>Liberar</Text>
+        </TouchableOpacity>
+      </View>
+  
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalView}>
+            {dishToAdd && (
+              <>
+                <Image source={{ uri: dishToAdd.imagen }} style={styles.modalImage} />
+                <Text style={styles.modalTitle}>{dishToAdd.nombre}</Text>
+  
+                <View style={styles.quantityContainer}>
+                  <TouchableOpacity onPress={() => setQuantity(Math.max(1, quantity - 1))}>
+                    <Text style={styles.quantityButton}>-</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.quantityText}>{quantity}</Text>
+                  <TouchableOpacity onPress={() => setQuantity(quantity + 1)}>
+                    <Text style={styles.quantityButton}>+</Text>
+                  </TouchableOpacity>
+                </View>
+  
+                <TextInput
+                  placeholder="Añadir observaciones..."
+                  multiline
+                  value={notes}
+                  onChangeText={setNotes}
+                  style={styles.observationsInput}
+                />
+  
+                <View style={{ flexDirection: 'row' }}>
+                  <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.cancelButton}>
+                    <Text style={styles.cancelButtonText}>Cancelar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={handleConfirmAddDish} style={styles.confirmButton}>
+                    <Text style={styles.confirmButtonText}>Agregar</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
+
 };
+
+
 
 
 const styles = StyleSheet.create({
