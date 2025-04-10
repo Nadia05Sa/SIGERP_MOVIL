@@ -162,7 +162,7 @@ const CreateAccountScreen = () => {
       )}
 
       <TouchableOpacity style={styles.cartButton} onPress={handleGoToCart}>
-        <Image source={require('../../assets/favicon.png')} style={styles.cartIcon} />
+        <Image source={require('../../assets/cart.png')} style={styles.cartIcon} />
       </TouchableOpacity>
 
       {/* Modal para agregar cantidad y notas al platillo */}

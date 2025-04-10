@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
+import { useNavigation } from '@react-navigation/native';
 import { useRoute } from '@react-navigation/native';
 import Header from '../components/Header';
 
@@ -10,9 +11,11 @@ export default function QrScreen() {
   console.log("Empleado ID:", empleadoId);
   console.log("Mesa ID:", mesaId);
   const url = `http://localhost:5173/resena?empleadoId=${empleadoId}&mesaId=${mesaId}`;
+  const navigation = useNavigation();
 
   const changestate = () => {
     console.log("Cambio de estado realizado");
+    navigation.navigate('TablesScreen');
   }
 
   return (
@@ -33,5 +36,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
+  },
+  confirmButton: { 
+    marginTop: 20,
+    backgroundColor: '#9B1C31', 
+    padding: 10, 
+    borderRadius: 8 
+  },
+  confirmText: { 
+    color: '#FFF', 
+    fontWeight: 'bold' 
   },
 });
