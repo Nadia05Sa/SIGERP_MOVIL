@@ -4,48 +4,47 @@ import LogoCompleto from '../../assets/LogoCompleto.png';
 import { useNavigation } from '@react-navigation/native';
 import { authenticate } from '../axiosConfig/axiosInterceptor';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { MaterialCommunityIcons } from 'react-native-vector-icons'; // Importar íconos
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false); // Estado para mostrar/ocultar contraseña
   const navigation = useNavigation();
-  
+
   const handleLogin = async () => {
     // Validación: Campos vacíos
     if (!email.trim() || !password.trim()) {
       Alert.alert('Error', 'Por favor, ingrese su correo y contraseña.');
       return;
     }
-    
+
     // Validación: Formato de correo electrónico
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       Alert.alert('Error', 'Por favor, ingrese un correo válido.');
       return;
     }
-    
+
     // Validación: Longitud mínima de la contraseña
     if (password.length < 4) {
       Alert.alert('Error', 'La contraseña debe tener al menos 4 caracteres.');
       return;
     }
-    
+
     const userData = await authenticate(email, password);
     console.log('User  data:', userData.estado);
 
     if (userData.estado === true) {
-        // Almacenar datos del empleado en AsyncStorage
-        await AsyncStorage.setItem('employeeData', JSON.stringify(userData));
-        console.log('Login exitoso:', userData.estado);
+      // Almacenar datos del empleado en AsyncStorage
+      await AsyncStorage.setItem('employeeData', JSON.stringify(userData));
+      console.log('Login exitoso:', userData.estado);
 
-        // Aquí puedes establecer el usuario en el contexto si lo estás usando
-          //AuthContext.setCurrentUser(userData.estado);
-        Alert.alert('Login exitoso', 'Bienvenido al sistema.');
-        navigation.navigate('TablesScreen');
+      // Aquí puedes establecer el usuario en el contexto si lo estás usando
+      Alert.alert('Login exitoso', 'Bienvenido al sistema.');
+      navigation.navigate('TablesScreen');
     } else {
-        const response = await doGet(`/empleado/${currentEmployeeData.id}/mesas`);
-        console.log('Respuesta de mesas:', response);
-        Alert.alert('Error', 'Credenciales incorrectas.');
+      Alert.alert('Error', 'Credenciales incorrectas.');
     }
   };
 
@@ -66,15 +65,27 @@ const LoginScreen = () => {
         />
         
         <Text style={styles.label}>Contraseña:</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Contraseña"
-          placeholderTextColor="#A0A0A0"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
-        
+        <View style={styles.passwordContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Contraseña"
+            placeholderTextColor="#A0A0A0"
+            secureTextEntry={!showPassword} // Controlar si la contraseña está visible
+            value={password}
+            onChangeText={setPassword}
+          />
+          <TouchableOpacity
+            onPress={() => setShowPassword(!showPassword)} // Cambiar el estado para mostrar/ocultar la contraseña
+            style={styles.eyeIcon}
+          >
+            <MaterialCommunityIcons
+              name={showPassword ? 'eye' : 'eye-off'} // Cambiar el ícono según el estado
+              size={24}
+              color="#333"
+            />
+          </TouchableOpacity>
+        </View>
+
         <TouchableOpacity style={styles.button} onPress={handleLogin}>
           <Text style={styles.buttonText}>Continuar</Text>
         </TouchableOpacity>
@@ -120,6 +131,13 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     marginBottom: 20,
     color: '#333',
+  },
+  passwordContainer: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  eyeIcon: {
   },
   button: {
     backgroundColor: '#9B1C31',

@@ -26,15 +26,10 @@ const AccountScreen = () => {
     const initData = async () => {
       const empId = await fetchEmployeeId();
       setEmployeeId(empId); // ✅ Almacenar empleadoId
-      console.log('Empleado ID:', empId);
-      console.log('Mesa ID:', tableId);
+      fetchOrdenByMesaId();
 
-      const storedOrdenId = await AsyncStorage.getItem('cuenta_id');
-      setOrdenId(storedOrdenId);
-      fetchOrdenById(storedOrdenId);
     };
     initData();
-    fetchDishes();
   }, []);
 
   const fetchEmployeeId = async () => {
@@ -46,30 +41,24 @@ const AccountScreen = () => {
     return null;
   };
 
-  const fetchDishes = async () => {
+  const fetchOrdenByMesaId = async () => {
     try {
-      const data = await doGet('/producto');
-      setDishes(data);
-    } catch (error) {
-      console.error('Error fetching dishes:', error);
-    }
-  };
-
-  const fetchOrdenById = async (ordenId) => {
-    try {
-      const data = await doGet(`/ordenes/${ordenId}`);
-      if (data?.platillos) {
-        const platillosConCantidad = data.platillos.map(p => ({
-          ...p,
-          quantity: p.quantity || 1,
-          notes: p.notes || ''
-        }));
-        setSelectedDishes(platillosConCantidad);
+      console.log('Fetching order for table ID:', tableId);
+      const data = await doGet(`/mesas/${tableId}/orden`);
+      console.log('Orden data:', data);
+      if (data && data.id) {
+        setSelectedDishes(data.detalles);  // Asume que "detalles" es un arreglo de platillos
+        setOrdenId(data.id);
+        await AsyncStorage.setItem('cuenta_id', data.id);
+      } else {
+        console.log('No hay una orden creada aún');
+        Alert.alert('Información', 'No hay una orden creada aún');
       }
     } catch (error) {
-      console.error('Error al obtener la orden:', error);
+      console.error('Error al obtener la orden vinculada a la mesa:', error);
+      Alert.alert('Error', 'No se pudo obtener la orden vinculada a la mesa');
     }
-  };
+  };  
 
   const handleSelectDish = (dish) => {
     setDishToAdd(dish);

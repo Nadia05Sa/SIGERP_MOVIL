@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, Image, StyleSheet, StatusBar, Modal, ActivityIndicator } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native'; // ✅ Importar useRoute
 import Header from '../components/Header';
 import { doGet } from '../axiosConfig/axiosInterceptor';
 
@@ -16,6 +16,9 @@ const CreateAccountScreen = () => {
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState('');
   const navigation = useNavigation();
+
+  const route = useRoute();
+  const { tableId, tableName } = route.params || {};
 
   // Cargar categorías al iniciar
   useEffect(() => {
@@ -42,7 +45,6 @@ const CreateAccountScreen = () => {
       setLoading(true);
       console.log('Fetching dishes for category ID:', categoryId);
       const data = await doGet(`/producto/categoria/${categoryId}`);
-      console.log('Platillos',data);
       setDishes(Array.isArray(data) ? data : []); // Asegura que sea un arreglo
     } catch (error) {
       console.error('Error fetching dishes by category:', error);
@@ -82,7 +84,7 @@ const CreateAccountScreen = () => {
 
   // Navega a la pantalla de confirmación con los platillos seleccionados
   const handleGoToCart = () => {
-    navigation.navigate('ConfirmAccountScreen', { selectedDishes });
+    navigation.navigate('ConfirmAccountScreen', { selectedDishes, tableId});
   };
 
   // Maneja la selección de una categoría y carga sus platillos
