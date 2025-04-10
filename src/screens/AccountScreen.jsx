@@ -108,12 +108,14 @@ const AccountScreen = () => {
   return (
     <View style={styles.container}>
       <Header title={`Cuenta - ${tableName}`} />
-  
+
       <StatusBar
         barStyle={modalVisible ? 'dark-content' : 'light-content'}
         backgroundColor={modalVisible ? 'rgb(83, 1, 29)' : '#a4113a'}
       />
-  
+
+
+
       <View style={styles.searchContainer}>
         <TextInput
           placeholder="Buscar platillo"
@@ -122,7 +124,7 @@ const AccountScreen = () => {
           style={styles.searchBar}
         />
       </View>
-  
+
       <FlatList
         data={dishes.filter(dish => dish.nombre.toLowerCase().includes(search.toLowerCase()))}
         keyExtractor={(item) => item.id.toString()}
@@ -138,14 +140,14 @@ const AccountScreen = () => {
           </TouchableOpacity>
         )}
       />
-  
+
       <View style={styles.footer}>
         <Text style={styles.totalText}>Total: ${total.toFixed(2)}</Text>
         <TouchableOpacity style={styles.confirmButton} onPress={handleGoToCart}>
           <Text style={styles.confirmText}>Liberar</Text>
         </TouchableOpacity>
       </View>
-  
+
       <Modal
         animationType="slide"
         transparent={true}
@@ -158,7 +160,7 @@ const AccountScreen = () => {
               <>
                 <Image source={{ uri: dishToAdd.imagen }} style={styles.modalImage} />
                 <Text style={styles.modalTitle}>{dishToAdd.nombre}</Text>
-  
+
                 <View style={styles.quantityContainer}>
                   <TouchableOpacity onPress={() => setQuantity(Math.max(1, quantity - 1))}>
                     <Text style={styles.quantityButton}>-</Text>
@@ -168,7 +170,7 @@ const AccountScreen = () => {
                     <Text style={styles.quantityButton}>+</Text>
                   </TouchableOpacity>
                 </View>
-  
+
                 <TextInput
                   placeholder="Añadir observaciones..."
                   multiline
@@ -176,7 +178,7 @@ const AccountScreen = () => {
                   onChangeText={setNotes}
                   style={styles.observationsInput}
                 />
-  
+
                 <View style={{ flexDirection: 'row' }}>
                   <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.cancelButton}>
                     <Text style={styles.cancelButtonText}>Cancelar</Text>
@@ -372,10 +374,10 @@ const styles = StyleSheet.create({
     fontSize: 18, 
     fontWeight: 'bold' 
   },
-  confirmButton: { 
-    backgroundColor: '#9B1C31', 
-    padding: 10, 
-    borderRadius: 8 
+  confirmButton: {
+    backgroundColor: '#9B1C31',
+    padding: 10,
+    borderRadius: 8
   },
   confirmText: { 
     color: '#FFF', 

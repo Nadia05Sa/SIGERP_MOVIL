@@ -40,20 +40,20 @@ const TablesScreen = () => {
     const fetchTables = useCallback(async () => {
         try {
             setLoading(true);
-            
+
             let currentEmployeeData = employeeData;
             if (!currentEmployeeData) {
                 currentEmployeeData = await getEmployeeData();
             }
-            
+
             if (!currentEmployeeData || !currentEmployeeData.id) {
                 console.error('No se encontró el ID del empleado');
                 Alert.alert('Error', 'No se pudo obtener la información del empleado. Por favor, inicia sesión nuevamente.');
                 return;
             }
-            
+
             const response = await doGet(`/empleado/${currentEmployeeData.id}/mesas`);
-            
+
             if (Array.isArray(response)) {
                 const activeTables = response.filter(table => table.estado === true);
                 setTables(activeTables);
@@ -90,7 +90,7 @@ const TablesScreen = () => {
             setLoading(true);
 
             // Simulación de cierre de mesa
-            const updatedTables = tables.map(t => 
+            const updatedTables = tables.map(t =>
                 t.id === table.id ? { ...t, estado: false } : t
             );
             setTables(updatedTables);
@@ -123,7 +123,7 @@ const TablesScreen = () => {
         navigation.navigate('AccountScreen', {
             tableId: selectedTable.id,
             tableName: selectedTable.nombre
-        });    
+        });
     }, [selectedTable, navigation]);
 
     const handleCloseTable = useCallback(() => {
