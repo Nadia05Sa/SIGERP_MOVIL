@@ -1,8 +1,8 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, use } from 'react';
 import { View, Text, TouchableOpacity, Alert, StyleSheet, FlatList, Image, Modal, StatusBar, ActivityIndicator } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Header from '../components/Header';
-import { doGet } from '../axiosConfig/axiosInterceptor';
+import { doDelete, doGet } from '../axiosConfig/axiosInterceptor';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const TablesScreen = () => {
@@ -10,7 +10,8 @@ const TablesScreen = () => {
     const [selectedTable, setSelectedTable] = useState(null); // Mesa seleccionada para mostrar en el modal
     const [modalVisible, setModalVisible] = useState(false); // Controla la visibilidad del modal
     const [loading, setLoading] = useState(true); // Estado de carga para mostrar un indicador de carga
-    const [employeeData, setEmployeeData] = useState(null); // Datos del empleado
+    const [employeeData, setEmployeeData] = useState(null);
+    const [ordenActiva, setOrdenActiva] = useState(false);
     const navigation = useNavigation(); // Hook para la navegación
     const isMounted = useRef(true); // Referencia para verificar si el componente está montado
 
@@ -85,32 +86,61 @@ const TablesScreen = () => {
     );
 
     // Maneja la selección de una mesa
-    const handlePressTable = useCallback((table) => {
-        setSelectedTable(table); // Establece la mesa seleccionada
-        setModalVisible(true); // Muestra el modal
+    const handlePressTable = useCallback(async (table) => {
+        setSelectedTable(table);
+        
+        const esValida = await validarOrden(table.id);
+        setOrdenActiva(esValida);
+    
+        setModalVisible(true);
     }, []);
+    
 
     // Función para cerrar la mesa
-    const closeTable = useCallback(async (table) => {
+    const closeTable = async (mesa) => {    
         try {
-            setModalVisible(false); // Cierra el modal
-            setLoading(true); // Inicia el estado de carga
-
-            // Simulación de cierre de mesa
-            const updatedTables = tables.map(t =>
-                t.id === table.id ? { ...t, estado: false } : t
-            );
-            setTables(updatedTables);
-
-            Alert.alert("Éxito", `La mesa ${table.nombre} ha sido cerrada correctamente.`);
+            if (!mesa) return;
+            const orden = await doGet(`/mesas/${mesa.id}/orden`);
+            
+                Alert.alert(
+                    'Cerrar mesa',
+                    `¿Deseas cerrar la orden de ${mesa.nombre}? Esto eliminará su orden.`,
+                    [
+                        { text: 'Cancelar', style: 'cancel' },
+                        {
+                            text: 'Aceptar',
+                            onPress: () => eliminarOrden(orden),
+                            style: 'destructive',
+                        }
+                    ]
+                );
         } catch (error) {
-            console.error('Error al cerrar la mesa:', error);
-            Alert.alert('Error', 'No se pudo cerrar la mesa. Por favor, intenta de nuevo.');
-        } finally {
-            setLoading(false);
+            console.error("Error al cerrar la mesa:", error);
+            Alert.alert("Error", "No se pudo cerrar la mesa.");
         }
-    }, [tables]);
-
+    }
+    const eliminarOrden = async (orden) => {
+        try {
+            console.log("Orden id: ",orden.id)
+            const cerrado = await doDelete(`/api/ordenes/${orden.id}`);
+            console.log("Mesa cerrada:", cerrado);
+            if(cerrado){
+                Alert.alert(
+                    'Mesa cerrada',
+                    `La mesa ${mesa.nombre} ha sido cerrada.`,
+                    [{ text: 'Aceptar', onPress: fetchTables }]
+                );
+                setModalVisible(false);
+                setSelectedTable(null); // Limpia la mesa seleccionada
+            }else{
+                console.error("No se pudo eliminar la orden.");
+                Alert.alert("Error", "No se pudo eliminar la orden.");
+            }
+        } catch (error) {
+            console.error("Error al eliminar la orden:", error);
+        }
+    };
+    
     // Navega a la pantalla para agregar platillos
     const handleAddDishes = useCallback(() => {
         if (!selectedTable) return;
@@ -123,30 +153,58 @@ const TablesScreen = () => {
         });
     }, [selectedTable, navigation]);
 
+    const validarOrden = async (tableId) => {
+        try {
+            let ordenExistente;
+            try {
+                ordenExistente = await doGet(`/mesas/${tableId}/orden`);
+            } catch (error) {
+                if (error.response?.status === 204 || error.response?.status === 404) {
+                    return false;
+                } else {
+                    throw error;
+                }
+            }
+    
+            return ordenExistente && ordenExistente.estado === true;
+        } catch (error) {
+            console.error('Error al validar la orden:', error);
+            Alert.alert('Error', 'No se pudo validar la orden. Por favor, intenta de nuevo.');
+            return false;
+        }
+    };
+    
     // Navega a la pantalla de cuenta
     const handleViewAccount = useCallback(() => {
         if (!selectedTable) return;
-
-        setModalVisible(false); // Cierra el modal
-        console.log("Enviando a AccountScreen con tableId:", selectedTable.id); // <- Verificación
-        navigation.navigate('AccountScreen', {
-            tableId: selectedTable.id,
-            tableName: selectedTable.nombre
+    
+        validarOrden(selectedTable.id).then((esValida) => {
+            if (esValida) {
+                setModalVisible(false); // Cierra el modal
+                console.log("Enviando a AccountScreen con tableId:", selectedTable.id); 
+                navigation.navigate('AccountScreen', {
+                    tableId: selectedTable.id,
+                    tableName: selectedTable.nombre
+                });
+            } else {
+                Alert.alert("Sin cuenta activa", "No hay una orden activa para esta mesa.");
+            }
         });
     }, [selectedTable, navigation]);
+    
 
     // Maneja la acción de cerrar la mesa
     const handleCloseTable = useCallback(() => {
         if (!selectedTable) return;
-
-        Alert.alert(
-            'Cerrar mesa',
-            `¿Estás seguro de que deseas cerrar la mesa ${selectedTable.nombre}?`,
-            [
-                { text: 'Cancelar', style: 'cancel' },
-                { text: 'Cerrar', onPress: () => closeTable(selectedTable) }
-            ]
-        );
+    
+        validarOrden(selectedTable.id).then((esValida) => {
+            if (esValida) {
+                closeTable(selectedTable); // Cierra la mesa
+                setModalVisible(false); // Cierra el modal
+            } else {
+                Alert.alert("Sin cuenta activa", "No hay una orden activa para esta mesa.");
+            }
+        });
     }, [selectedTable, closeTable]);
 
     // Renderiza cada elemento de la lista de mesas
@@ -226,12 +284,16 @@ const TablesScreen = () => {
                         <TouchableOpacity style={styles.modalButton} onPress={handleAddDishes}>
                             <Text style={styles.modalButtonText}>Agregar platillos</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.modalButton} onPress={handleViewAccount}>
-                            <Text style={styles.modalButtonText}>Ver cuenta</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.modalButton} onPress={handleCloseTable}>
-                            <Text style={styles.modalButtonText}>Cancelar Orden</Text>
-                        </TouchableOpacity>
+                        {ordenActiva && (
+                            <TouchableOpacity style={styles.modalButton} onPress={handleViewAccount}>
+                                <Text style={styles.modalButtonText}>Ver cuenta</Text>
+                            </TouchableOpacity>
+                        )}
+                        {ordenActiva && (
+                            <TouchableOpacity style={styles.modalButton} onPress={handleCloseTable}>
+                                <Text style={styles.modalButtonText}>Cancelar Orden</Text>
+                            </TouchableOpacity>
+                        )}
                         <TouchableOpacity style={styles.cancelButton} onPress={() => setModalVisible(false)}>
                             <Text style={styles.cancelButtonText}>Cancelar</Text>
                         </TouchableOpacity>

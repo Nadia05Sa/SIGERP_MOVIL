@@ -13,38 +13,42 @@ const LoginScreen = () => {
   const navigation = useNavigation();
 
   const handleLogin = async () => {
-    // Validación: Campos vacíos
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('Error', 'Por favor, ingrese su correo y contraseña.');
-      return;
-    }
+    try{
+      // Validación: Campos vacíos
+      if (!email.trim() || !password.trim()) {
+        Alert.alert('Error', 'Por favor, ingrese su correo y contraseña.');
+        return;
+      }
 
-    // Validación: Formato de correo electrónico
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      Alert.alert('Error', 'Por favor, ingrese un correo válido.');
-      return;
-    }
+      // Validación: Formato de correo electrónico
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        Alert.alert('Error', 'Por favor, ingrese un correo válido.');
+        return;
+      }
 
-    // Validación: Longitud mínima de la contraseña
-    if (password.length < 4) {
-      Alert.alert('Error', 'La contraseña debe tener al menos 4 caracteres.');
-      return;
-    }
+      // Validación: Longitud mínima de la contraseña
+      if (password.length < 4) {
+        Alert.alert('Error', 'La contraseña debe tener al menos 4 caracteres.');
+        return;
+      }
 
-    const userData = await authenticate(email, password);
-    console.log('User  data:', userData.estado);
+      const userData = await authenticate(email, password);
+      console.log('User  data:', userData.estado);
 
-    if (userData.estado === true) {
-      // Almacenar datos del empleado en AsyncStorage
-      await AsyncStorage.setItem('employeeData', JSON.stringify(userData));
-      console.log('Login exitoso:', userData.estado);
+      if (userData.estado === true) {
+        // Almacenar datos del empleado en AsyncStorage
+        await AsyncStorage.setItem('employeeData', JSON.stringify(userData));
+        console.log('Login exitoso:', userData.estado);
 
-      // Aquí puedes establecer el usuario en el contexto si lo estás usando
-      Alert.alert('Login exitoso', 'Bienvenido al sistema.');
-      navigation.navigate('TablesScreen');
-    } else {
-      Alert.alert('Error', 'Credenciales incorrectas.');
+        // Aquí puedes establecer el usuario en el contexto si lo estás usando
+        navigation.navigate('TablesScreen');
+      } else {
+        Alert.alert('Error', 'Credenciales incorrectas.');
+      }
+    }catch (error) {
+      console.error('Error en la autenticación:', error);
+      Alert.alert('Error', 'Ocurrió un error durante la autenticación. Por favor, inténtelo de nuevo más tarde.');
     }
   };
 

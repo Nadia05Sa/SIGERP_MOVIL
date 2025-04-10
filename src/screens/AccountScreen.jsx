@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, Image, StyleSheet, StatusBar, Modal, Alert } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Header from '../components/Header';
-import { doGet } from '../axiosConfig/axiosInterceptor';
+import { doGet, doPatch } from '../axiosConfig/axiosInterceptor';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AccountScreen = () => {
@@ -97,8 +97,8 @@ const AccountScreen = () => {
           return;
       }
 
-      const response = await doGet(`/ordenes/${ordenId}/estado`);
-      if (response.status === 200) {
+      const response = await doPatch(`/ordenes/${ordenId}/estado`);
+      if (response) {
           Alert.alert('Éxito', 'El estado de la orden se ha actualizado');
           fetchOrdenByMesaId(); // Volver a obtener la orden actualizada
           navigation.navigate('QrScreen', {
