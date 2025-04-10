@@ -48,7 +48,7 @@ const CreateAccountScreen = () => {
       console.error('Error fetching dishes by category:', error);
       setDishes([]); // En caso de error, evita dejarlo en undefined
     }finally {
-      setLoading(false); // 👈 Finaliza la carga
+      setLoading(false); 
     }
   };
 

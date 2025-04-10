@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, Image, StyleSheet, StatusBar, Modal } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native'; // ✅ Importar useRoute
 import Header from '../components/Header';
 import { doGet } from '../axiosConfig/axiosInterceptor';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -14,23 +14,37 @@ const AccountScreen = () => {
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState('');
   const [ordenId, setOrdenId] = useState(null);
+  const [employeeId, setEmployeeId] = useState(null); // ✅ Guardar el ID del empleado
 
   const navigation = useNavigation();
+  const route = useRoute();
+  const { tableId, tableName } = route.params || {};
 
   const total = selectedDishes.reduce((acc, dish) => acc + (dish.precio * dish.quantity || 0), 0);
 
   useEffect(() => {
-    const fetchOrdenId = async () => {
-      const id = await AsyncStorage.getItem('cuenta_id');
-      if (id) {
-        console.log('Orden ID:', id);
-        setOrdenId(id);
-        fetchOrdenById(id);
-      }
+    const initData = async () => {
+      const empId = await fetchEmployeeId();
+      setEmployeeId(empId); // ✅ Almacenar empleadoId
+      console.log('Empleado ID:', empId);
+      console.log('Mesa ID:', tableId);
+
+      const storedOrdenId = await AsyncStorage.getItem('cuenta_id');
+      setOrdenId(storedOrdenId);
+      fetchOrdenById(storedOrdenId);
     };
-    fetchOrdenId();
+    initData();
     fetchDishes();
   }, []);
+
+  const fetchEmployeeId = async () => {
+    const jsonValue = await AsyncStorage.getItem('employeeData');
+    if (jsonValue) {
+      const data = JSON.parse(jsonValue);
+      return data.id;
+    }
+    return null;
+  };
 
   const fetchDishes = async () => {
     try {
@@ -44,7 +58,14 @@ const AccountScreen = () => {
   const fetchOrdenById = async (ordenId) => {
     try {
       const data = await doGet(`/ordenes/${ordenId}`);
-      // Si existe una orden previa, agregarla al estado.
+      if (data?.platillos) {
+        const platillosConCantidad = data.platillos.map(p => ({
+          ...p,
+          quantity: p.quantity || 1,
+          notes: p.notes || ''
+        }));
+        setSelectedDishes(platillosConCantidad);
+      }
     } catch (error) {
       console.error('Error al obtener la orden:', error);
     }
@@ -77,102 +98,24 @@ const AccountScreen = () => {
   };
 
   const handleGoToCart = () => {
-    const ordenId = 'ordenId'; // puedes obtenerlo dinámicamente si lo tienes
-    const empleadoId = '67ea55b15c0a131fb87b5832'; // puedes obtenerlo dinámicamente si lo tienes
-    const mesaId = '67dc32145e484c4bd8c960cc';     // también puede venir de otro lado
-    navigation.navigate('QrScreen', { ordenId, empleadoId, mesaId });
+    navigation.navigate('QrScreen', {
+      ordenId,
+      empleadoId: employeeId,
+      mesaId: tableId
+    });
   };
 
   return (
-    <View style={styles.container}>
-      <Header title="Cuenta" />
-
-      <StatusBar barStyle={modalVisible ? 'dark-content' : 'light-content'} backgroundColor={modalVisible ? 'rgb(83, 1, 29)' : '#a4113a'} />
-
-      <View style={styles.searchContainer}>
-        <TextInput
-          placeholder="Buscar platillo"
-          value={search}
-          onChangeText={setSearch}
-          style={styles.searchBar}
-        />
-      </View>
-
-      <FlatList
-        data={dishes.filter(dish => dish.nombre.toLowerCase().includes(search.toLowerCase()))}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.flatListContent}
-        renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => handleSelectDish(item)} style={styles.dishItem}>
-            <Image source={{ uri: item.imagen }} style={styles.dishIcon} />
-            <View style={styles.dishDetails}>
-              <Text style={styles.dishName}>{item.nombre}</Text>
-              <Text style={styles.dishDescription}>${item.precio}</Text>
-              <Text>{item.descripcion}</Text>
-            </View>
-          </TouchableOpacity>
-        )}
-      />
-
-
-      <View style={styles.footer}>
-        <Text style={styles.totalText}>Total: ${total.toFixed(2)}</Text>
-        <TouchableOpacity style={styles.confirmButton} onPress={handleGoToCart}>
-          <Text style={styles.confirmText}>Liberar</Text>
-        </TouchableOpacity>
-      </View>
-
-
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalView}>
-            {dishToAdd && (
-              <>
-                <Image source={{ uri: dishToAdd.imagen }} style={styles.modalImage} />
-                <Text style={styles.modalTitle}>{dishToAdd.nombre}</Text>
-
-                <View style={styles.quantityContainer}>
-                  <TouchableOpacity onPress={() => setQuantity(Math.max(1, quantity - 1))}>
-                    <Text style={styles.quantityButton}>-</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.quantityText}>{quantity}</Text>
-                  <TouchableOpacity onPress={() => setQuantity(quantity + 1)}>
-                    <Text style={styles.quantityButton}>+</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <TextInput
-                  placeholder="Añadir observaciones..."
-                  multiline
-                  value={notes}
-                  onChangeText={setNotes}
-                  style={styles.observationsInput}
-                />
-
-                <View style={{ flexDirection: 'row' }}>
-                  <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.cancelButton}>
-                    <Text style={styles.cancelButtonText}>Cancelar</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={handleConfirmAddDish} style={styles.confirmButton}>
-                    <Text style={styles.confirmButtonText}>Agregar</Text>
-                  </TouchableOpacity>
-                </View>
-              </>
-            )}
-          </View>
-        </View>
-      </Modal>
-
+    <View style={{ flex: 1 }}>
+      <Header title={`Cuenta - ${tableName}`} />
+      <Text>Total: €{total.toFixed(2)}</Text>
+      {/* Aquí podrías renderizar los platillos y el botón para continuar */}
+      <TouchableOpacity onPress={handleGoToCart}>
+        <Text>Ver QR / Confirmar pedido</Text>
+      </TouchableOpacity>
     </View>
   );
 };
-
-
 
 
 const styles = StyleSheet.create({
