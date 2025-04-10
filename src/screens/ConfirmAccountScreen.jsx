@@ -89,7 +89,7 @@ const ConfirmAccountScreen = () => {
             return;
         }
 
-        const detalles = dishes.map(dish => ({
+        const nuevosDetalles = dishes.map(dish => ({
             producto: { id: dish.id },
             cantidad: dish.quantity,
             detalle: dish.notes || ''
@@ -100,35 +100,53 @@ const ConfirmAccountScreen = () => {
             estado: true,
             comentario: '',
             mesa: { id: tableId },
-            detalles: detalles
+            detalles: nuevosDetalles
         };
 
         let ordenExistente;
-
         try {
             ordenExistente = await doGet(`/mesas/${tableId}/orden`);
         } catch (error) {
-            if (error.response?.status === 204) {
+            if (error.response?.status === 204 || error.response?.status === 404) {
                 ordenExistente = null;
             }
         }
 
-        if (ordenExistente) {
-            const detallesActualizados = [...ordenExistente.detalles, ...ordenData.detalles];
-            const dataActualizada = { ...ordenExistente, detalles: detallesActualizados };
-
-            await doPatch(`/ordenes/${ordenExistente.id}`, dataActualizada);
-            Alert.alert('Orden actualizada', 'Se agregaron los nuevos platillos a la cuenta.');
+        if (ordenExistente && ordenExistente.estado === true) {
+          // La orden está activa (estado === true), actualizamos
+          const detallesExistentes = ordenExistente.detalles || [];
+          const detallesActualizados = [...detallesExistentes];
+        
+          nuevosDetalles.forEach(nuevo => {
+            const indexExistente = detallesActualizados.findIndex(d =>
+              d.producto.id === nuevo.producto.id
+            );
+        
+            if (indexExistente !== -1) {
+              detallesActualizados[indexExistente].cantidad += nuevo.cantidad;
+            } else {
+              detallesActualizados.push(nuevo);
+            }
+          });
+        
+          const dataActualizada = {
+            ...ordenExistente,
+            detalles: detallesActualizados
+          };
+        
+          await doPatch(`/ordenes/${ordenExistente.id}`, dataActualizada);
+          Alert.alert('Orden actualizada', 'Se actualizaron los platillos de la orden.');
         } else {
-            const ordenCreada = await doPost('/ordenes', ordenData);
-            Alert.alert('Orden creada', 'Se ha creado una nueva cuenta para la mesa.');
-            console.log('Orden creada:', ordenCreada);
-            const mesa = await doGet(`/mesas/${tableId}`);
-            const mesaActualizada = { ...mesa, orden: ordenCreada };
-            console.log('Mesa actualizada:', mesaActualizada);
-            await doPatch(`/mesas/${tableId}`, mesaActualizada);
-            
+          // No hay orden o la orden existente está cerrada (estado === false), creamos nueva
+          const ordenCreada = await doPost('/ordenes', ordenData);
+          Alert.alert('Orden creada', 'Se ha creado una nueva cuenta para la mesa.');
+        
+          // Asociamos la nueva orden a la mesa
+          const mesa = await doGet(`/mesas/${tableId}`);
+          const mesaActualizada = { ...mesa, orden: ordenCreada };
+          await doPatch(`/mesas/${tableId}`, mesaActualizada);
         }
+        
 
         navigation.pop(2);
     } catch (error) {

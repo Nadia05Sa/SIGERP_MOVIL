@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { useNavigation } from '@react-navigation/native';
 import { useRoute } from '@react-navigation/native';
+import Logo from '../../assets/LogoBlanco.png';
 import Header from '../components/Header';
 
 export default function QrScreen() {
@@ -20,7 +21,14 @@ export default function QrScreen() {
 
   return (
     <View style={styles.container}>
-      <Header title="QR" />
+      <View style={styles.header}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Text style={styles.title}>QR</Text>
+        </View>
+        <View style={{ flexDirection: 'row' }}>
+          <Image source={Logo} style={styles.logo} />
+        </View>
+      </View>
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <Text style={{ fontSize: 24, marginBottom: 20 }}>Escanea el QR</Text>
         <QRCode value={url} size={300} />
@@ -46,5 +54,25 @@ const styles = StyleSheet.create({
   confirmText: { 
     color: '#FFF', 
     fontWeight: 'bold' 
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    padding: 5,
+    marginBottom:20,
+    backgroundColor: '#a4113a',
+    borderBottomColor: '#DDD',
+    borderBottomWidth: 1,
+  },
+  logo: {
+    width: 45,
+    height: 45,
+  },
+  title: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
   },
 });

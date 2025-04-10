@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, Image, StyleSheet, StatusBar, Modal } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native'; // ✅ Importar useRoute
+import { View, Text, TextInput, TouchableOpacity, FlatList, Image, StyleSheet, StatusBar, Modal, Alert } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import Header from '../components/Header';
 import { doGet } from '../axiosConfig/axiosInterceptor';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -27,7 +27,6 @@ const AccountScreen = () => {
       const empId = await fetchEmployeeId();
       setEmployeeId(empId); // ✅ Almacenar empleadoId
       fetchOrdenByMesaId();
-
     };
     initData();
   }, []);
@@ -47,7 +46,12 @@ const AccountScreen = () => {
       const data = await doGet(`/mesas/${tableId}/orden`);
       console.log('Orden data:', data);
       if (data && data.id) {
-        setSelectedDishes(data.detalles);  // Asume que "detalles" es un arreglo de platillos
+        const detallesFormateados = data.detalles.map(detalle => ({
+          ...detalle.producto,
+          quantity: detalle.cantidad,
+          notes: detalle.detalle,
+        }));
+        setDishes(detallesFormateados);
         setOrdenId(data.id);
         await AsyncStorage.setItem('cuenta_id', data.id);
       } else {
@@ -58,8 +62,8 @@ const AccountScreen = () => {
       console.error('Error al obtener la orden vinculada a la mesa:', error);
       Alert.alert('Error', 'No se pudo obtener la orden vinculada a la mesa');
     }
-  };  
-
+  };
+  
   const handleSelectDish = (dish) => {
     setDishToAdd(dish);
     setQuantity(1);
@@ -86,12 +90,29 @@ const AccountScreen = () => {
     setNotes('');
   };
 
-  const handleGoToCart = () => {
-    navigation.navigate('QrScreen', {
-      ordenId,
-      empleadoId: employeeId,
-      mesaId: tableId
-    });
+  const handleGoToCart = async () => {
+    try {
+      if (!ordenId) {
+          Alert.alert('Error', 'No hay una orden activa para actualizar');
+          return;
+      }
+
+      const response = await doGet(`/ordenes/${ordenId}/estado`);
+      if (response.status === 200) {
+          Alert.alert('Éxito', 'El estado de la orden se ha actualizado');
+          fetchOrdenByMesaId(); // Volver a obtener la orden actualizada
+          navigation.navigate('QrScreen', {
+            ordenId,
+            empleadoId: employeeId,
+            mesaId: tableId
+          });
+      } else {
+          throw new Error('No se pudo actualizar el estado');
+      }
+    } catch (error) {
+        console.error('Error al actualizar el estado de la orden:', error);
+        Alert.alert('Error', 'No se pudo actualizar el estado de la orden');
+    }
   };
 
   return (
@@ -124,7 +145,8 @@ const AccountScreen = () => {
             <View style={styles.dishDetails}>
               <Text style={styles.dishName}>{item.nombre}</Text>
               <Text style={styles.dishDescription}>${item.precio}</Text>
-              <Text>{item.descripcion}</Text>
+              <Text style={styles.dishDescription}>Cantidad: {item.quantity || 0}</Text>
+              <Text style={styles.dishDescription}>Notas: {item.notes || 'N/A'}</Text>
             </View>
           </TouchableOpacity>
         )}
@@ -151,29 +173,15 @@ const AccountScreen = () => {
                 <Text style={styles.modalTitle}>{dishToAdd.nombre}</Text>
 
                 <View style={styles.quantityContainer}>
-                  <TouchableOpacity onPress={() => setQuantity(Math.max(1, quantity - 1))}>
-                    <Text style={styles.quantityButton}>-</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.quantityText}>{quantity}</Text>
-                  <TouchableOpacity onPress={() => setQuantity(quantity + 1)}>
-                    <Text style={styles.quantityButton}>+</Text>
-                  </TouchableOpacity>
+                  <Text style={styles.quantityButton}>Cantiad: {quantity}</Text>
+                  <Text style={styles.quantityButton}>Precio: {dishToAdd.precio}</Text>
                 </View>
+                
+                <Text style={styles.quantityButton}>Notas: {dishToAdd.notes || 'N/A'}</Text>
 
-                <TextInput
-                  placeholder="Añadir observaciones..."
-                  multiline
-                  value={notes}
-                  onChangeText={setNotes}
-                  style={styles.observationsInput}
-                />
-
-                <View style={{ flexDirection: 'row' }}>
+                <View style={{ flexDirection: 'row', marginTop: 10 }}>
                   <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.cancelButton}>
-                    <Text style={styles.cancelButtonText}>Cancelar</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={handleConfirmAddDish} style={styles.confirmButton}>
-                    <Text style={styles.confirmButtonText}>Agregar</Text>
+                    <Text style={styles.cancelButtonText}>Cerrar</Text>
                   </TouchableOpacity>
                 </View>
               </>
@@ -306,17 +314,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   quantityContainer: {
-    borderWidth: 1,
-    borderRadius: 30,
-    borderColor: '#DDD',
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'between',
+    justifyContent: 'between',
     marginVertical: 10,
   },
   quantityButton: {
-    fontSize: 20,
+    fontSize: 18,
     paddingHorizontal: 10,
-    color: '#DDD',
+    color: '#000',
   },
   quantityText: {
     fontSize: 18,
