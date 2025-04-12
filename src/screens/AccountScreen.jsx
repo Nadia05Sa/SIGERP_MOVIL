@@ -20,7 +20,7 @@ const AccountScreen = () => {
   const route = useRoute();
   const { tableId, tableName } = route.params || {};
 
-  const total = selectedDishes.reduce((acc, dish) => acc + (dish.precio * dish.quantity || 0), 0);
+  const total = dishes.reduce((acc, dish) => acc + (dish.precio * dish.quantity || 0), 0);
 
   useEffect(() => {
     const initData = async () => {
@@ -71,25 +71,6 @@ const AccountScreen = () => {
     setModalVisible(true);
   };
 
-  const handleConfirmAddDish = () => {
-    setSelectedDishes((prev) => {
-      const existingDish = prev.find(dish => dish.id === dishToAdd.id);
-      if (existingDish) {
-        return prev.map(dish =>
-          dish.id === dishToAdd.id
-            ? { ...dish, quantity: dish.quantity + quantity, notes: notes || dish.notes }
-            : dish
-        );
-      } else {
-        return [...prev, { ...dishToAdd, quantity, notes }];
-      }
-    });
-    setModalVisible(false);
-    setDishToAdd(null);
-    setQuantity(1);
-    setNotes('');
-  };
-
   const handleGoToCart = async () => {
     try {
       if (!ordenId) {
@@ -99,12 +80,21 @@ const AccountScreen = () => {
 
       const response = await doPatch(`/ordenes/${ordenId}/estado`);
       if (response) {
-          Alert.alert('Éxito', 'El estado de la orden se ha actualizado');
+          Alert.alert('Éxito', 'La orden se ha Liberado correctamente');
           fetchOrdenByMesaId(); // Volver a obtener la orden actualizada
-          navigation.navigate('QrScreen', {
-            ordenId,
-            empleadoId: employeeId,
-            mesaId: tableId
+          // Limpia el stack y navega a la pantalla actual
+          navigation.reset({
+            index: 0,
+            routes: [
+                {
+                    name: 'QrScreen',
+                    params: {
+                        ordenId,
+                        empleadoId: employeeId,
+                        mesaId: tableId,
+                    },
+                },
+            ],
           });
       } else {
           throw new Error('No se pudo actualizar el estado');

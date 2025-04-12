@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import LogoCompleto from '../../assets/LogoCompleto.png';
 import { useNavigation } from '@react-navigation/native';
 import { authenticate } from '../axiosConfig/axiosInterceptor';
@@ -11,9 +11,12 @@ const LoginScreen = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false); // Estado para mostrar/ocultar contraseña
   const navigation = useNavigation();
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     try{
+      
+      setLoading(true);
       // Validación: Campos vacíos
       if (!email.trim() || !password.trim()) {
         Alert.alert('Error', 'Por favor, ingrese su correo y contraseña.');
@@ -49,9 +52,11 @@ const LoginScreen = () => {
     }catch (error) {
       console.error('Error en la autenticación:', error);
       Alert.alert('Error', 'Ocurrió un error durante la autenticación. Por favor, inténtelo de nuevo más tarde.');
+    }finally {
+      setLoading(false);
     }
+    
   };
-
   return (
     <View style={styles.container}>
       <View style={styles.card}>
@@ -90,9 +95,18 @@ const LoginScreen = () => {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.button} onPress={handleLogin}>
-          <Text style={styles.buttonText}>Continuar</Text>
+        <TouchableOpacity
+          style={[styles.button, loading && styles.buttonDisabled]}
+          onPress={handleLogin}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color="#FFF" />
+          ) : (
+            <Text style={styles.buttonText}>Continuar</Text>
+          )}
         </TouchableOpacity>
+
       </View>
     </View>
   );
@@ -105,6 +119,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  buttonDisabled: {
+    opacity: 0.8,
+  },  
   card: {
     backgroundColor: '#FFF',
     width: '80%',
@@ -142,6 +159,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   eyeIcon: {
+    right: 30,
+    top: -10,
   },
   button: {
     backgroundColor: '#9B1C31',
@@ -155,6 +174,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff'
+}
 });
 
 export default LoginScreen;

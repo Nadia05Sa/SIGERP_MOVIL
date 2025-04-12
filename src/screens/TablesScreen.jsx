@@ -101,46 +101,45 @@ const TablesScreen = () => {
         try {
             if (!mesa) return;
             const orden = await doGet(`/mesas/${mesa.id}/orden`);
-            
-                Alert.alert(
-                    'Cerrar mesa',
-                    `¿Deseas cerrar la orden de ${mesa.nombre}? Esto eliminará su orden.`,
-                    [
-                        { text: 'Cancelar', style: 'cancel' },
-                        {
-                            text: 'Aceptar',
-                            onPress: () => eliminarOrden(orden),
-                            style: 'destructive',
-                        }
-                    ]
-                );
+            console.log("Orden obtenida:", orden);
+            if (!orden || !orden.id) {
+                Alert.alert("Error", "No se encontró una orden activa para esta mesa.");
+                return;
+            }
+            console.log("Cerrando mesa:", mesa.nombre);
+            console.log("Orden a eliminar:", orden.id);
+            // Llama a la función para eliminar la orden        
+            Alert.alert(
+                'Mesa cerrada',
+                `La mesa ${mesa.nombre} ha sido cerrada.`,
+                [{ text: 'Aceptar', onPress: deleteOrder(orden.id) }],
+                { cancelable: false }
+            );     
         } catch (error) {
             console.error("Error al cerrar la mesa:", error);
             Alert.alert("Error", "No se pudo cerrar la mesa.");
         }
     }
-    const eliminarOrden = async (orden) => {
+    
+    const deleteOrder = async (ordenId) => {
         try {
-            console.log("Orden id: ",orden.id)
-            const cerrado = await doDelete(`/api/ordenes/${orden.id}`);
-            console.log("Mesa cerrada:", cerrado);
-            if(cerrado){
-                Alert.alert(
-                    'Mesa cerrada',
-                    `La mesa ${mesa.nombre} ha sido cerrada.`,
-                    [{ text: 'Aceptar', onPress: fetchTables }]
-                );
-                setModalVisible(false);
-                setSelectedTable(null); // Limpia la mesa seleccionada
-            }else{
-                console.error("No se pudo eliminar la orden.");
-                Alert.alert("Error", "No se pudo eliminar la orden.");
+            const response = await doDelete(`/ordenes/${ordenId}`);
+            console.log("Orden eliminada:", response);
+            if (response) {
+                Alert.alert("Éxito", "La orden ha sido eliminada correctamente.");
+                fetchTables(); // Refresca la lista de mesas después de eliminar la orden
             }
+
+            setModalVisible(false);   
+
+            return response;
         } catch (error) {
             console.error("Error al eliminar la orden:", error);
+            Alert.alert("Error", "No se pudo eliminar la orden.");
+            return null;
         }
     };
-    
+
     // Navega a la pantalla para agregar platillos
     const handleAddDishes = useCallback(() => {
         if (!selectedTable) return;
@@ -158,7 +157,10 @@ const TablesScreen = () => {
             let ordenExistente;
             try {
                 ordenExistente = await doGet(`/mesas/${tableId}/orden`);
+                console.log("Orden obtenida:", ordenExistente);
+
             } catch (error) {
+                console.error('Error al obtener la orden:', error);
                 if (error.response?.status === 204 || error.response?.status === 404) {
                     return false;
                 } else {
@@ -200,7 +202,6 @@ const TablesScreen = () => {
         validarOrden(selectedTable.id).then((esValida) => {
             if (esValida) {
                 closeTable(selectedTable); // Cierra la mesa
-                setModalVisible(false); // Cierra el modal
             } else {
                 Alert.alert("Sin cuenta activa", "No hay una orden activa para esta mesa.");
             }
@@ -221,7 +222,7 @@ const TablesScreen = () => {
                         : require('../../assets/mesa-de-comedor.png')
                 }
                 defaultSource={require('../../assets/mesa-de-comedor.png')}
-                style={[styles.icon, { tintColor: '#9B1C31' }]}
+                style={[styles.icon, { }]}
             />
             <Text style={[styles.tableText, { color: '#9B1C31' }]}>
                 {item.nombre || 'Mesa sin nombre'}
@@ -285,14 +286,13 @@ const TablesScreen = () => {
                             <Text style={styles.modalButtonText}>Agregar platillos</Text>
                         </TouchableOpacity>
                         {ordenActiva && (
+                            <>
                             <TouchableOpacity style={styles.modalButton} onPress={handleViewAccount}>
                                 <Text style={styles.modalButtonText}>Ver cuenta</Text>
-                            </TouchableOpacity>
-                        )}
-                        {ordenActiva && (
-                            <TouchableOpacity style={styles.modalButton} onPress={handleCloseTable}>
+                            </TouchableOpacity><TouchableOpacity style={styles.modalButton} onPress={handleCloseTable}>
                                 <Text style={styles.modalButtonText}>Cancelar Orden</Text>
                             </TouchableOpacity>
+                            </>
                         )}
                         <TouchableOpacity style={styles.cancelButton} onPress={() => setModalVisible(false)}>
                             <Text style={styles.cancelButtonText}>Cancelar</Text>
@@ -319,6 +319,12 @@ const styles = StyleSheet.create({
     modalButtonText: { color: '#FFF', fontWeight: 'bold' },
     cancelButton: { backgroundColor: '#999', padding: 10, borderRadius: 5, marginTop: 10, width: '100%', alignItems: 'center' },
     cancelButtonText: { color: '#FFF', fontWeight: 'bold' },
+    emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    emptyStateText: { fontSize: 18, marginBottom: 10 },
+    refreshButton: { backgroundColor: '#9B1C31', padding: 10, borderRadius: 5 },
+    refreshButtonText: { color: '#FFF', fontWeight: 'bold' },
+    logo: { width: 45, height: 45 },
+    title: { color: '#fff', fontSize: 24, fontWeight: 'bold' },
 });
 
 export default TablesScreen;

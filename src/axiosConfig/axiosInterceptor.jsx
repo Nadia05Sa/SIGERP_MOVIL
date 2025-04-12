@@ -63,9 +63,9 @@ export const doPatch = async (url, data) => {
     }
 };
 
-export const doDelete = async (url) => {
+export const doDelete  = async (url, params = {}) => {
     try {
-        const response = await api.delete(url);
+        const response = await api.delete(url, { params });
         return response.data;
     } catch (error) {
         throw error;
